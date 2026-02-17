@@ -15,14 +15,13 @@ RUN npm run build -- --configuration production
 # ---------- runtime stage ----------
 FROM nginx:alpine
 
-# Clean default nginx content
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy nginx config
+# nginx config
 COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built Angular output
-COPY --from=build /app/frontend/dist/frontend-app/browser /usr/share/nginx/html
+# Copy Angular build output
+COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
