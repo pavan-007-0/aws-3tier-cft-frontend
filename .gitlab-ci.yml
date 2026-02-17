@@ -14,16 +14,14 @@ stages:
   - build
   - deploy
 
+before_script:
+  - apk add --no-cache aws-cli
+  - aws sts get-caller-identity
+  - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # ---------------- BUILD & PUSH ----------------
 build-frontend:
   stage: build
-  protected: true
-  only:
-    - main
-  before_script:
-    - apk add --no-cache aws-cli
-    - aws sts get-caller-identity
-    - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   script:
     - |
       aws ecr describe-repositories \
@@ -44,17 +42,13 @@ build-frontend:
     - docker tag "$FRONTEND_REPO:$IMAGE_TAG" "$IMAGE_URI"
     - docker push "$IMAGE_URI"
 
+  only:
+    - main
+
 # ---------------- DEPLOY INFRA ----------------
 deploy-frontend:
   stage: deploy
-  protected: true
-  only:
-    - main
   needs: ["build-frontend"]
-  before_script:
-    - apk add --no-cache aws-cli
-    - aws sts get-caller-identity
-    - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   script:
     - |
       cat > frontend-infra.yaml << 'EOF'
@@ -231,3 +225,6 @@ deploy-frontend:
         --capabilities CAPABILITY_NAMED_IAM \
         --parameter-overrides \
           ImageURI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+
+  only:
+    - main
