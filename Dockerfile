@@ -10,7 +10,7 @@ RUN npm ci --legacy-peer-deps
 COPY frontend-app/frontend-app ./
 
 # Build Angular app
-RUN cd frontend && npm run build -- --configuration production
+RUN npm run build -- --configuration production
 
 # ---------- runtime stage ----------
 FROM nginx:alpine
