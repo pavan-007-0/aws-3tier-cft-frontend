@@ -2,25 +2,25 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Install dependencies
+# install deps
 COPY frontend-app/frontend-app/package*.json ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source
+# copy source
 COPY frontend-app/frontend-app ./
 
-# Build Angular app
-RUN npm run build --configuration production
+# ✅ correct Angular prod build
+RUN npm run build -- --configuration=production
 
 # ---------- runtime stage ----------
 FROM nginx:alpine
 
 RUN rm -rf /usr/share/nginx/html/*
 
-# ✅ CORRECT nginx.conf PATH
+# nginx config (must exist here)
 COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
 
-# ✅ CORRECT Angular output
+# Angular 21 output
 COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
 
 EXPOSE 80
