@@ -10,15 +10,16 @@ RUN npm ci --legacy-peer-deps
 COPY frontend-app/frontend-app ./
 
 # Build Angular app
-RUN npm run build -- --configuration production
+RUN npm run build --configuration production
 
 # ---------- runtime stage ----------
 FROM nginx:alpine
 
+# Remove default nginx html
 RUN rm -rf /usr/share/nginx/html/*
 
-# nginx config
-COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config (FROM ROOT)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy Angular build output
 COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
