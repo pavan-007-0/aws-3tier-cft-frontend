@@ -1,0 +1,230 @@
+image: docker:24
+
+services:
+  - docker:24-dind
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  AWS_DEFAULT_REGION: us-east-1
+  FRONTEND_REPO: frontend-repo
+  IMAGE_TAG: latest
+  FRONTEND_STACK: frontend-stack
+
+stages:
+  - build
+  - deploy
+
+before_script:
+  - apk add --no-cache aws-cli
+  - aws sts get-caller-identity
+  - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+# ---------------- BUILD & PUSH ----------------
+build-frontend:
+  stage: build
+  script:
+    - |
+      aws ecr describe-repositories \
+        --repository-names "$FRONTEND_REPO" \
+        --region "$AWS_DEFAULT_REGION" \
+      || aws ecr create-repository \
+        --repository-name "$FRONTEND_REPO" \
+        --region "$AWS_DEFAULT_REGION"
+
+    - |
+      aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | \
+      docker login --username AWS --password-stdin \
+      "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+
+    - docker build -t "$FRONTEND_REPO:$IMAGE_TAG" .
+
+    - export IMAGE_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+    - docker tag "$FRONTEND_REPO:$IMAGE_TAG" "$IMAGE_URI"
+    - docker push "$IMAGE_URI"
+
+  only:
+    - main
+
+# ---------------- DEPLOY INFRA ----------------
+deploy-frontend:
+  stage: deploy
+  needs: ["build-frontend"]
+  script:
+    - |
+      cat > frontend-infra.yaml << 'EOF'
+      AWSTemplateFormatVersion: "2010-09-09"
+      Description: Frontend ECS Fargate with ALB
+
+      Parameters:
+        ImageURI:
+          Type: String
+
+      Resources:
+        VPC:
+          Type: AWS::EC2::VPC
+          Properties:
+            CidrBlock: 10.10.0.0/16
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+
+        IGW:
+          Type: AWS::EC2::InternetGateway
+
+        IGWAttach:
+          Type: AWS::EC2::VPCGatewayAttachment
+          Properties:
+            VpcId: !Ref VPC
+            InternetGatewayId: !Ref IGW
+
+        Subnet1:
+          Type: AWS::EC2::Subnet
+          Properties:
+            VpcId: !Ref VPC
+            CidrBlock: 10.10.1.0/24
+            MapPublicIpOnLaunch: true
+            AvailabilityZone: us-east-1a
+
+        Subnet2:
+          Type: AWS::EC2::Subnet
+          Properties:
+            VpcId: !Ref VPC
+            CidrBlock: 10.10.2.0/24
+            MapPublicIpOnLaunch: true
+            AvailabilityZone: us-east-1b
+
+        RouteTable:
+          Type: AWS::EC2::RouteTable
+          Properties:
+            VpcId: !Ref VPC
+
+        Route:
+          Type: AWS::EC2::Route
+          DependsOn: IGWAttach
+          Properties:
+            RouteTableId: !Ref RouteTable
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref IGW
+
+        Subnet1RT:
+          Type: AWS::EC2::SubnetRouteTableAssociation
+          Properties:
+            SubnetId: !Ref Subnet1
+            RouteTableId: !Ref RouteTable
+
+        Subnet2RT:
+          Type: AWS::EC2::SubnetRouteTableAssociation
+          Properties:
+            SubnetId: !Ref Subnet2
+            RouteTableId: !Ref RouteTable
+
+        ALBSG:
+          Type: AWS::EC2::SecurityGroup
+          Properties:
+            GroupDescription: Frontend ALB SG
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+              - IpProtocol: tcp
+                FromPort: 80
+                ToPort: 80
+                CidrIp: 0.0.0.0/0
+
+        TaskSG:
+          Type: AWS::EC2::SecurityGroup
+          Properties:
+            GroupDescription: Frontend ECS Task SG
+            VpcId: !Ref VPC
+            SecurityGroupIngress:
+              - IpProtocol: tcp
+                FromPort: 80
+                ToPort: 80
+                SourceSecurityGroupId: !Ref ALBSG
+
+        Cluster:
+          Type: AWS::ECS::Cluster
+
+        ExecutionRole:
+          Type: AWS::IAM::Role
+          Properties:
+            AssumeRolePolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Principal:
+                    Service: ecs-tasks.amazonaws.com
+                  Action: sts:AssumeRole
+            ManagedPolicyArns:
+              - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+        TaskDef:
+          Type: AWS::ECS::TaskDefinition
+          Properties:
+            Cpu: "256"
+            Memory: "512"
+            NetworkMode: awsvpc
+            RequiresCompatibilities: [FARGATE]
+            ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+            ContainerDefinitions:
+              - Name: frontend
+                Image: !Ref ImageURI
+                PortMappings:
+                  - ContainerPort: 80
+
+        TG:
+          Type: AWS::ElasticLoadBalancingV2::TargetGroup
+          Properties:
+            Port: 80
+            Protocol: HTTP
+            TargetType: ip
+            VpcId: !Ref VPC
+            HealthCheckPath: /
+
+        ALB:
+          Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+          Properties:
+            Scheme: internet-facing
+            Subnets: [!Ref Subnet1, !Ref Subnet2]
+            SecurityGroups: [!Ref ALBSG]
+
+        Listener:
+          Type: AWS::ElasticLoadBalancingV2::Listener
+          Properties:
+            LoadBalancerArn: !Ref ALB
+            Port: 80
+            Protocol: HTTP
+            DefaultActions:
+              - Type: forward
+                TargetGroupArn: !Ref TG
+
+        Service:
+          Type: AWS::ECS::Service
+          DependsOn: Listener
+          Properties:
+            Cluster: !Ref Cluster
+            LaunchType: FARGATE
+            DesiredCount: 1
+            TaskDefinition: !Ref TaskDef
+            NetworkConfiguration:
+              AwsvpcConfiguration:
+                AssignPublicIp: ENABLED
+                Subnets: [!Ref Subnet1, !Ref Subnet2]
+                SecurityGroups: [!Ref TaskSG]
+            LoadBalancers:
+              - ContainerName: frontend
+                ContainerPort: 80
+                TargetGroupArn: !Ref TG
+
+      Outputs:
+        FrontendURL:
+          Value: !GetAtt ALB.DNSName
+      EOF
+
+    - |
+      aws cloudformation deploy \
+        --stack-name "$FRONTEND_STACK" \
+        --template-file frontend-infra.yaml \
+        --capabilities CAPABILITY_NAMED_IAM \
+        --parameter-overrides \
+          ImageURI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+
+  only:
+    - main
