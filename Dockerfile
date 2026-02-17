@@ -3,11 +3,11 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Install dependencies
-COPY frontend-app/frontend-app/package*.json ./frontend/
-RUN cd frontend && npm ci --legacy-peer-deps
+COPY frontend-app/frontend-app/package*.json ./
+RUN npm ci --legacy-peer-deps
 
 # Copy source
-COPY frontend-app/frontend-app ./frontend
+COPY frontend-app/frontend-app ./
 
 # Build Angular app
 RUN cd frontend && npm run build -- --configuration production
