@@ -1,0 +1,296 @@
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { AuthService, LoginCredentials, RegisterData, AuthResponse } from './auth.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [AuthService]
+    });
+    service = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+    
+    // Clear localStorage before each test
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  describe('login', () => {
+    it('should login successfully with valid credentials', () => {
+      const credentials: LoginCredentials = {
+        email: 'test@example.com',
+        password: 'password123'
+      };
+
+      const mockResponse: AuthResponse = {
+        success: true,
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        user: {
+          id: 1,
+          name: 'Test User',
+          email: 'test@example.com',
+          role: 'customer'
+        }
+      };
+
+      service.login(credentials).subscribe(response => {
+        expect(response.success).toBe(true);
+        expect(response.access_token).toBe('mock-access-token');
+        expect(response.user?.email).toBe('test@example.com');
+      });
+
+      const req = httpMock.expectOne('http://127.0.0.1:5000/api/login');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        email: 'test@example.com',
+        password: 'password123'
+      });
+      req.flush(mockResponse);
+    });
+
+    it('should reject login with invalid email format', () => {
+      const credentials: LoginCredentials = {
+        email: 'invalid-email',
+        password: 'password123'
+      };
+
+      service.login(credentials).subscribe({
+        next: () => fail('Should have failed'),
+        error: (error) => {
+          expect(error.message).toBe('Invalid email format');
+        }
+      });
+
+      httpMock.expectNone('http://127.0.0.1:5000/api/login');
+    });
+
+    it('should reject login with short password', () => {
+      const credentials: LoginCredentials = {
+        email: 'test@example.com',
+        password: '123'
+      };
+
+      service.login(credentials).subscribe({
+        next: () => fail('Should have failed'),
+        error: (error) => {
+          expect(error.message).toBe('Password must be at least 8 characters');
+        }
+      });
+
+      httpMock.expectNone('http://127.0.0.1:5000/api/login');
+    });
+  });
+
+  describe('register', () => {
+    it('should register successfully with valid data', () => {
+      const registerData: RegisterData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'Password123',
+        confirmPassword: 'Password123',
+        acceptTerms: true
+      };
+
+      const mockResponse: AuthResponse = {
+        success: true,
+        message: 'Registration successful'
+      };
+
+      service.register(registerData).subscribe(response => {
+        expect(response.success).toBe(true);
+        expect(response.message).toBe('Registration successful');
+      });
+
+      const req = httpMock.expectOne('http://127.0.0.1:5000/api/register');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body.name).toBe('Test User');
+      expect(req.request.body.email).toBe('test@example.com');
+      req.flush(mockResponse);
+    });
+
+    it('should reject registration with mismatched passwords', () => {
+      const registerData: RegisterData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'Password123',
+        confirmPassword: 'DifferentPassword',
+        acceptTerms: true
+      };
+
+      service.register(registerData).subscribe({
+        next: () => fail('Should have failed'),
+        error: (error) => {
+          expect(error.message).toBe('Passwords do not match');
+        }
+      });
+
+      httpMock.expectNone('http://127.0.0.1:5000/api/register');
+    });
+
+    it('should reject registration without accepting terms', () => {
+      const registerData: RegisterData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'Password123',
+        confirmPassword: 'Password123',
+        acceptTerms: false
+      };
+
+      service.register(registerData).subscribe({
+        next: () => fail('Should have failed'),
+        error: (error) => {
+          expect(error.message).toBe('You must accept the terms and conditions');
+        }
+      });
+
+      httpMock.expectNone('http://127.0.0.1:5000/api/register');
+    });
+  });
+
+  describe('token management', () => {
+    it('should store and retrieve tokens correctly', () => {
+      const mockUser = {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        role: 'customer' as const
+      };
+
+      // Use private method through service
+      (service as any).setCurrentUser(mockUser, 'access-token', 'refresh-token', false);
+
+      expect(service.getToken()).toBe('access-token');
+      expect(service.getRefreshToken()).toBe('refresh-token');
+      expect(service.getCurrentUser()).toEqual(mockUser);
+    });
+
+    it('should clear tokens on logout', () => {
+      // Set up initial state
+      localStorage.setItem('access_token', 'test-token');
+      localStorage.setItem('refresh_token', 'test-refresh');
+      localStorage.setItem('current_user', JSON.stringify({ id: 1, name: 'Test' }));
+
+      const mockResponse = { success: true };
+
+      service.logout().subscribe(response => {
+        expect(response.success).toBe(true);
+        expect(service.getToken()).toBeNull();
+        expect(service.getRefreshToken()).toBeNull();
+        expect(service.getCurrentUser()).toBeNull();
+      });
+
+      const req = httpMock.expectOne('http://127.0.0.1:5000/api/logout');
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('authentication state', () => {
+    it('should return false for isAuthenticated when no token', () => {
+      expect(service.isAuthenticated()).toBe(false);
+    });
+
+    it('should return true for isAuthenticated with valid token', () => {
+      // Create a mock JWT token (not a real one, just for testing)
+      const mockPayload = {
+        user_id: 1,
+        email: 'test@example.com',
+        exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
+      };
+      const mockToken = 'header.' + btoa(JSON.stringify(mockPayload)) + '.signature';
+      
+      localStorage.setItem('access_token', mockToken);
+      
+      expect(service.isAuthenticated()).toBe(true);
+    });
+
+    it('should return false for expired token', () => {
+      const mockPayload = {
+        user_id: 1,
+        email: 'test@example.com',
+        exp: Math.floor(Date.now() / 1000) - 3600 // 1 hour ago (expired)
+      };
+      const mockToken = 'header.' + btoa(JSON.stringify(mockPayload)) + '.signature';
+      
+      localStorage.setItem('access_token', mockToken);
+      
+      expect(service.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe('role management', () => {
+    beforeEach(() => {
+      const mockUser = {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        role: 'admin' as const
+      };
+      (service as any).currentUserSubject.next(mockUser);
+    });
+
+    it('should correctly identify admin role', () => {
+      expect(service.isAdmin()).toBe(true);
+      expect(service.hasRole('admin')).toBe(true);
+    });
+
+    it('should correctly identify non-admin role', () => {
+      const mockUser = {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        role: 'customer' as const
+      };
+      (service as any).currentUserSubject.next(mockUser);
+
+      expect(service.isAdmin()).toBe(false);
+      expect(service.hasRole('customer')).toBe(true);
+    });
+  });
+
+  describe('refresh token', () => {
+    it('should refresh token successfully', () => {
+      localStorage.setItem('refresh_token', 'valid-refresh-token');
+
+      const mockResponse: AuthResponse = {
+        success: true,
+        access_token: 'new-access-token'
+      };
+
+      service.refreshToken().subscribe(response => {
+        expect(response.success).toBe(true);
+        expect(response.access_token).toBe('new-access-token');
+      });
+
+      const req = httpMock.expectOne('http://127.0.0.1:5000/api/refresh');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body.refresh_token).toBe('valid-refresh-token');
+      req.flush(mockResponse);
+    });
+
+    it('should fail when no refresh token available', () => {
+      service.refreshToken().subscribe({
+        next: () => fail('Should have failed'),
+        error: (error) => {
+          expect(error.message).toBe('No refresh token available');
+        }
+      });
+
+      httpMock.expectNone('http://127.0.0.1:5000/api/refresh');
+    });
+  });
+});

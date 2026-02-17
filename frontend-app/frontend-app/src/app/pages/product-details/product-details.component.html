@@ -1,0 +1,15 @@
+<div class="product-details-container">
+
+  <h2>{{ product?.name }}</h2>
+
+  <img 
+    [src]="'assets/products/' + product?.image" 
+    alt="{{ product?.name }}" 
+    width="250"
+  />
+
+  <p><strong>Price:</strong> ₹{{ product?.price }}</p>
+
+  <p><strong>Description:</strong> {{ product?.description }}</p>
+
+</div>

@@ -1,0 +1,17 @@
+<div class="login-container">
+  <h2>Login</h2>
+
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" [(ngModel)]="email" placeholder="Enter email">
+  </div>
+
+  <div class="form-group">
+    <label>Password</label>
+    <input type="password" [(ngModel)]="password" placeholder="Enter password">
+  </div>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <button (click)="login()">Login</button>
+</div>

@@ -1,0 +1,43 @@
+.register-box {
+  max-width: 400px;
+  margin: auto;
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #125ca1;
+}
+
+.error {
+  color: red;
+}
+
+.success {
+  color: green;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 10px;
+}

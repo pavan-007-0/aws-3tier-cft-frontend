@@ -1,0 +1,23 @@
+<h2>Create an Account</h2>
+
+<div class="register-box">
+
+  <label>Name</label>
+  <input type="text" [(ngModel)]="user.name" placeholder="Enter your name">
+
+  <label>Email</label>
+  <input type="email" [(ngModel)]="user.email" placeholder="Enter your email">
+
+  <label>Password</label>
+  <input type="password" [(ngModel)]="user.password" placeholder="Create password">
+
+  <p class="error" *ngIf="error">{{ error }}</p>
+  <p class="success" *ngIf="success">{{ success }}</p>
+
+  <button (click)="register()">Register</button>
+
+  <p class="login-link">
+    Already have an account? <a routerLink="/login">Login</a>
+  </p>
+
+</div>

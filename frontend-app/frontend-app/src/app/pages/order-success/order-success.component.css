@@ -1,0 +1,42 @@
+.success-container {
+  max-width: 500px;
+  margin: 30px auto;
+  text-align: center;
+  padding: 20px;
+  background: #f9fff9;
+  border: 1px solid #c8e6c9;
+  border-radius: 10px;
+}
+
+.order-box {
+  text-align: left;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border: 1px solid #ddd;
+}
+
+.item {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.buttons {
+  margin-top: 20px;
+}
+
+.buttons button {
+  margin: 5px;
+  padding: 10px 18px;
+  font-size: 16px;
+  border: none;
+  background: #1976d2;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.buttons button:hover {
+  background: #0d47a1;
+}

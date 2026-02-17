@@ -1,0 +1,228 @@
+<!-- Hero Section -->
+<section class="relative bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
+  <!-- Background Pattern -->
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, var(--color-primary-500) 1px, transparent 0); background-size: 20px 20px;"></div>
+  </div>
+  
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      
+      <!-- Hero Content -->
+      <div class="text-center lg:text-left">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight mb-6">
+          Shop the 
+          <span class="bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
+            Future
+          </span>
+          <br>Today
+        </h1>
+        
+        <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl">
+          Discover premium products with cutting-edge technology, exceptional quality, and unbeatable prices. Your perfect shopping experience starts here.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+          <app-animated-button
+            text="Shop Now"
+            variant="primary"
+            size="xl"
+            [glowEffect]="true"
+            routerLink="/products"
+            icon="<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 7l5 5m0 0l-5 5m5-5H6'></path></svg>"
+          ></app-animated-button>
+          
+          <app-animated-button
+            text="View Deals"
+            variant="outline"
+            size="xl"
+            routerLink="/deals"
+            icon="<svg class='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'></path></svg>"
+          ></app-animated-button>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-8 mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">50K+</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Happy Customers</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">10K+</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Products</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">99%</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Satisfaction</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Hero Image -->
+      <div class="relative">
+        <div class="relative z-10">
+          <img 
+            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop&crop=center" 
+            alt="Shopping Experience" 
+            class="w-full h-96 object-cover rounded-2xl shadow-2xl"
+          />
+          
+          <!-- Floating Cards -->
+          <div class="absolute -top-6 -left-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 animate-float">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">Free Shipping</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">On orders over $100</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="absolute -bottom-6 -right-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 animate-float" style="animation-delay: 0.5s;">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">Secure Payment</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">256-bit SSL encryption</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Background Decoration -->
+        <div class="absolute inset-0 bg-gradient-to-r from-primary-400 to-primary-600 rounded-2xl transform rotate-6 scale-105 opacity-20"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-20 bg-white dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        Why Choose EcomStore?
+      </h2>
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+        We're committed to providing you with the best shopping experience through innovative features and exceptional service.
+      </p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div class="text-center group">
+        <div class="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Lightning Fast</h3>
+        <p class="text-gray-600 dark:text-gray-400">Quick loading times and instant search results for seamless shopping.</p>
+      </div>
+      
+      <div class="text-center group">
+        <div class="w-16 h-16 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Secure & Safe</h3>
+        <p class="text-gray-600 dark:text-gray-400">Advanced security measures to protect your data and transactions.</p>
+      </div>
+      
+      <div class="text-center group">
+        <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Customer Love</h3>
+        <p class="text-gray-600 dark:text-gray-400">24/7 support and hassle-free returns for complete satisfaction.</p>
+      </div>
+      
+      <div class="text-center group">
+        <div class="w-16 h-16 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Best Prices</h3>
+        <p class="text-gray-600 dark:text-gray-400">Competitive pricing with regular deals and exclusive offers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="py-20 bg-gray-50 dark:bg-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        Featured Products
+      </h2>
+      <p class="text-xl text-gray-600 dark:text-gray-300">
+        Discover our handpicked selection of premium products
+      </p>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <app-product-card
+        *ngFor="let product of featuredProducts; trackBy: trackByProductId"
+        [product]="product"
+        (addToCart)="onAddToCart($event)"
+        (quickView)="onQuickView($event)"
+        (toggleWishlist)="onToggleWishlist($event)"
+        (compare)="onCompare($event)"
+        class="transform transition-all duration-300 hover:scale-105"
+      ></app-product-card>
+    </div>
+    
+    <div class="text-center mt-12">
+      <app-animated-button
+        text="View All Products"
+        variant="primary"
+        size="lg"
+        routerLink="/products"
+        icon="<svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M13 7l5 5m0 0l-5 5m5-5H6'></path></svg>"
+      ></app-animated-button>
+    </div>
+  </div>
+</section>
+
+<!-- Newsletter Section -->
+<section class="py-20 bg-gradient-to-r from-primary-600 to-primary-800">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-3xl font-bold text-white mb-4">
+      Stay Updated with Latest Deals
+    </h2>
+    <p class="text-xl text-primary-100 mb-8">
+      Subscribe to our newsletter and never miss out on exclusive offers and new arrivals.
+    </p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+      <input
+        type="email"
+        placeholder="Enter your email"
+        class="flex-1 px-6 py-4 rounded-xl border-0 focus:ring-4 focus:ring-white/20 focus:outline-none text-gray-900 placeholder-gray-500"
+      />
+      <app-animated-button
+        text="Subscribe"
+        variant="secondary"
+        size="lg"
+        [glowEffect]="true"
+        icon="<svg class='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'></path></svg>"
+      ></app-animated-button>
+    </div>
+    
+    <p class="text-sm text-primary-200 mt-4">
+      No spam, unsubscribe at any time. We respect your privacy.
+    </p>
+  </div>
+</section>

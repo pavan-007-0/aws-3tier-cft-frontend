@@ -1,0 +1,91 @@
+<!-- Enterprise Products Page Header -->
+<div class="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 dark:from-primary-800 dark:via-primary-900 dark:to-primary-950 text-white py-20 overflow-hidden">
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h1 class="text-5xl md:text-6xl font-bold mb-6">Discover Excellence</h1>
+    <p class="text-xl md:text-2xl text-primary-100 max-w-3xl mx-auto">
+      Explore our curated selection of premium products
+    </p>
+  </div>
+</div>
+
+<!-- Products Section -->
+<div *ngIf="!loading && !error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+    <!-- Product Card -->
+    <div
+      *ngFor="let product of filteredProducts; trackBy: trackByProductId"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+    >
+
+      <!-- Image Wrapper -->
+      <div class="aspect-square mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden h-48">
+        <img
+          [src]="product.image"
+          [alt]="product.name"
+          class="w-full h-full object-cover"
+          loading="lazy"
+          (error)="onImageError($event)"
+        />
+      </div>
+
+      <!-- Product Info -->
+      <div class="space-y-2">
+        <h3 class="font-semibold text-gray-900 dark:text-white text-lg">
+          {{ product.name }}
+        </h3>
+
+        <p class="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
+          {{ product.description }}
+        </p>
+
+        <!-- Price -->
+        <div class="flex items-center space-x-2">
+          <span class="text-xl font-bold text-primary-600 dark:text-primary-400">
+            ${{ product.price }}
+          </span>
+          <span
+            *ngIf="product.compare_price && product.compare_price > product.price"
+            class="text-sm text-gray-500 line-through"
+          >
+            ${{ product.compare_price }}
+          </span>
+        </div>
+
+        <!-- Rating -->
+        <div *ngIf="product.rating" class="flex items-center space-x-1">
+          <div class="flex text-yellow-400">
+            <span *ngFor="let star of [1,2,3,4,5]">
+              {{ star <= product.rating ? '★' : '☆' }}
+            </span>
+          </div>
+          <span class="text-sm text-gray-500">
+            ({{ product.review_count || 0 }})
+          </span>
+        </div>
+
+        <!-- Add to Cart -->
+        <button
+          (click)="addToCart(product)"
+          class="w-full mt-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 font-medium"
+        >
+          Add to Cart
+        </button>
+      </div>
+
+    </div>
+    <!-- End Product Card -->
+
+  </div>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="loading" class="flex justify-center items-center py-20">
+  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+</div>
+
+<!-- Error State -->
+<div *ngIf="error" class="text-center py-20 text-red-600">
+  {{ error }}
+</div>

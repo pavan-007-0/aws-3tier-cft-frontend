@@ -1,0 +1,25 @@
+<div class="success-container">
+
+  <h2>✓ Order Placed Successfully!</h2>
+  <p>Thank you for your purchase.</p>
+
+  <div class="order-box" *ngIf="order">
+    <p><strong>Order ID:</strong> {{ order.id }}</p>
+
+    <h3>Order Summary</h3>
+
+    <div *ngFor="let item of order.items" class="item">
+      <h4>{{ item.product.name }}</h4>
+      <p>Qty: {{ item.qty }}</p>
+      <p>₹{{ item.product.price }}</p>
+    </div>
+
+    <h3>Total: ₹{{ order.total }}</h3>
+  </div>
+
+  <div class="buttons">
+    <button routerLink="/products">Continue Shopping</button>
+    <button routerLink="/">Back to Home</button>
+    <button routerLink="/orders">View Orders</button>
+  </div>
+</div>

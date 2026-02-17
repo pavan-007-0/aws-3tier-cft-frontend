@@ -1,0 +1,50 @@
+<div style="
+  max-width:700px;
+  margin:40px auto;
+  padding:20px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  background:white;
+  text-align:center;
+">
+
+  <h2 style="color:green; font-size:28px; margin-bottom:10px;">
+    ✓ Order Placed Successfully!
+  </h2>
+
+  <p style="font-size:18px;">Thank you for your purchase.</p>
+
+  <h3 style="margin-top:20px;">Order ID: <strong>{{ order?.id }}</strong></h3>
+
+  <hr style="margin:20px 0;">
+
+  <h3>Order Summary</h3>
+
+  <div *ngFor="let item of order?.items" 
+       style="display:flex; align-items:center; gap:15px; margin:15px 0;">
+    
+    <img [src]="item.product.image"
+         width="70" height="70"
+         (error)="$event.target.src='assets/images/placeholder.png'"
+         style="object-fit:cover; border-radius:6px;">
+
+    <div style="text-align:left; flex:1;">
+      <strong>{{ item.product.name }}</strong>
+      <p>Qty: {{ item.qty }}</p>
+    </div>
+
+    <div style="font-weight:bold;">
+      ₹{{ item.product.price * item.qty }}
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>Total: ₹{{ order?.total }}</h2>
+
+  <div style="margin-top:25px;">
+    <button (click)="continueShopping()" style="margin-right:10px;">Continue Shopping</button>
+    <button (click)="backToHome()" style="margin-right:10px;">Back to Home</button>
+    <button (click)="viewOrders()">View Orders</button>
+  </div>
+</div>
