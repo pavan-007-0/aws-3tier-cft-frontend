@@ -13,7 +13,7 @@ FROM nginx:1.25-alpine
 
 RUN rm -rf /usr/share/nginx/html/* && chmod 755 /usr/share/nginx/html
 
-COPY frontend-app/frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # ✅ THIS LINE IS THE KEY - Copy built Angular app to Nginx
 COPY --from=build /app/dist/frontend-app/browser /usr/share/nginx/html/
