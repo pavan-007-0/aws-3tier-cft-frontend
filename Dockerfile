@@ -1,4 +1,4 @@
-# ---------- BUILD STAGE ----------
+# ---------- build stage ----------
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -8,22 +8,20 @@ RUN npm ci --legacy-peer-deps
 
 COPY frontend-app/frontend-app ./
 
-# Angular build (env handled by Angular itself)
+# Angular static build
 RUN npm run build
 
-
-# ---------- RUNTIME STAGE ----------
+# ---------- runtime stage ----------
 FROM nginx:1.25-alpine
 
-# Remove default nginx files
+# Clean default html
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy nginx config
 COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy Angular build output
-COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
+# ⚠️ IMPORTANT: copy BROWSER output
+COPY --from=build /app/dist/frontend-app/browser /usr/share/nginx/html
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]
