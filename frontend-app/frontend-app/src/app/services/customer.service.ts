@@ -149,7 +149,7 @@ export class CustomerService {
           this.updateLocalCustomer(customerId, updates);
           const customer = this.customersSubject.value.find(c => c.id === customerId);
           if (customer) {
-            return new Observable(observer => {
+            return new Observable<Customer>(observer => {
               observer.next({ ...customer, ...updates });
               observer.complete();
             });
