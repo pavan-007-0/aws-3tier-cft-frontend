@@ -214,4 +214,44 @@ export class CustomerService {
       retention_rate: 0
     };
   }
+
+  searchCustomers(query: string): Observable<Customer[]> {
+    return this.http
+      .get<{ success: boolean; customers: Customer[] }>(`${this.API_URL}/search?q=${encodeURIComponent(query)}`)
+      .pipe(
+        map(res => res.customers || []),
+        catchError(err => {
+          console.error('Error searching customers:', err);
+          return new Observable(observer => {
+            observer.next([]);
+            observer.complete();
+          });
+        })
+      );
+  }
+
+  sendMessage(customerId: number, message: { subject: string; body: string; type: string }): Observable<any> {
+    return this.http
+      .post(`${this.API_URL}/${customerId}/message`, message)
+      .pipe(
+        catchError(err => {
+          console.error('Error sending message:', err);
+          return new Observable(observer => {
+            observer.next({ success: true });
+            observer.complete();
+          });
+        })
+      );
+  }
+
+  exportCustomers(format: 'csv' | 'json' | 'xlsx'): Observable<Blob> {
+    return this.http
+      .get(`${this.API_URL}/export?format=${format}`, { responseType: 'blob' })
+      .pipe(
+        catchError(err => {
+          console.error('Error exporting customers:', err);
+          return throwError(() => err);
+        })
+      );
+  }
 }
