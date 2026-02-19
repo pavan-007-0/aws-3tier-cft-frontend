@@ -16,7 +16,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY frontend-app/frontend-app/nginx.conf /etc/nginx/conf.d/default.conf
 
 # ✅ THIS LINE IS THE KEY
-COPY --from=build /app/dist/frontend-app /usr/share/nginx/html
+COPY --from=build /app/dist/frontend-app/browser /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
