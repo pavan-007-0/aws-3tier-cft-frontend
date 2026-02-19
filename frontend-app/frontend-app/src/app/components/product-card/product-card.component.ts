@@ -353,14 +353,8 @@ export class ProductCardComponent implements OnInit {
       imageUrl = `/assets/products/${imageUrl}`;
     }
 
-    // Add cache buster to prevent image repetition issues
-    const separator = imageUrl.includes('?') ? '&' : '?';
-    return `${imageUrl}${separator}v=${this.product.id}_${this.getImageCacheBuster()}`;
-  }
-
-  private getImageCacheBuster(): string {
-    // Use product ID + a hash of the time to ensure unique URLs
-    return Math.floor(Date.now() / (60 * 1000)).toString(); // Changes every minute
+    // Return clean URL without cache buster - rely on HTTP cache headers instead
+    return imageUrl;
   }
 
   onImageLoad() {

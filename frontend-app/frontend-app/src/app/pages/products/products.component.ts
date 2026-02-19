@@ -35,13 +35,6 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadProductsFromAPI();
-    
-    // Refresh products every 10 minutes to handle production caching issues
-    setInterval(() => {
-      console.log('Auto-refreshing products cache...');
-      this.productCache.clear();
-      this.loadProductsFromAPI();
-    }, 10 * 60 * 1000);
   }
 
   ngOnDestroy(): void {
@@ -113,9 +106,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
       return `/assets/products/${imageUrl}`;
     }
 
-    // Add cache buster to prevent image caching issues
-    const separator = imageUrl.includes('?') ? '&' : '?';
-    return `${imageUrl}${separator}v=${Date.now()}`;
+    // Return clean URL - rely on HTTP cache headers for caching
+    return imageUrl;
   }
 
   private loadSampleProducts(): void {
