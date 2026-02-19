@@ -92,7 +92,7 @@ export class CustomerService {
         catchError(err => {
           console.error('Error fetching customers:', err);
           const demo = this.getDemoCustomers();
-          return new Observable(observer => {
+          return new Observable<{ customers: Customer[]; total: number }>(observer => {
             observer.next({ customers: demo, total: demo.length });
             observer.complete();
           });
@@ -109,7 +109,7 @@ export class CustomerService {
           console.error('Error fetching customer:', err);
           const customer = this.getDemoCustomers().find(c => c.id === customerId);
           if (customer) {
-            return new Observable(observer => {
+            return new Observable<Customer>(observer => {
               observer.next(customer);
               observer.complete();
             });
@@ -179,7 +179,7 @@ export class CustomerService {
         catchError(() => {
           const demo = this.getDemoStats();
           this.statsSubject.next(demo);
-          return new Observable(observer => {
+          return new Observable<CustomerStats>(observer => {
             observer.next(demo);
             observer.complete();
           });
@@ -222,7 +222,7 @@ export class CustomerService {
         map(res => res.customers || []),
         catchError(err => {
           console.error('Error searching customers:', err);
-          return new Observable(observer => {
+          return new Observable<Customer[]>(observer => {
             observer.next([]);
             observer.complete();
           });
