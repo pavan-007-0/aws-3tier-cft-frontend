@@ -247,7 +247,7 @@ export class AuthService {
     return this.http.get<any[]>(`${this.API}/user/orders`).pipe(
       catchError(err => {
         console.error('Error fetching user orders:', err);
-        return new Observable(observer => {
+        return new Observable<any[]>(observer => {
           observer.next([]);
           observer.complete();
         });
