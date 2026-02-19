@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 export interface Product {
   id: number;
@@ -20,32 +21,27 @@ export interface Product {
 @Injectable({ providedIn: 'root' })
 export class ProductService {
 
-  private API_URL = 'http://127.0.0.1:5000/api';
+  private API = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
-  // Get all products
   getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.API_URL}/products`);
+    return this.http.get<Product[]>(`${this.API}/products`);
   }
 
-  // Get product by ID
   getProductById(id: number): Observable<Product> {
-    return this.http.get<Product>(`${this.API_URL}/products/${id}`);
+    return this.http.get<Product>(`${this.API}/products/${id}`);
   }
 
-  // Add product
   addProduct(product: Product): Observable<any> {
-    return this.http.post(`${this.API_URL}/products`, product);
+    return this.http.post(`${this.API}/products`, product);
   }
 
-  // Update product
   updateProduct(product: Product): Observable<any> {
-    return this.http.put(`${this.API_URL}/products/${product.id}`, product);
+    return this.http.put(`${this.API}/products/${product.id}`, product);
   }
 
-  // Delete product
   deleteProduct(id: number): Observable<any> {
-    return this.http.delete(`${this.API_URL}/products/${id}`);
+    return this.http.delete(`${this.API}/products/${id}`);
   }
 }
