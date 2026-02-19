@@ -36,10 +36,8 @@ build-frontend:
         "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
 
     - docker build -t $FRONTEND_REPO:$IMAGE_TAG .
-    - docker tag $FRONTEND_REPO:$IMAGE_TAG \
-        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
-    - docker push \
-        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
+    - docker tag $FRONTEND_REPO:$IMAGE_TAG "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+    - docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
   only:
     - main
 
