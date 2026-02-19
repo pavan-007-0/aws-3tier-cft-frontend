@@ -196,6 +196,65 @@ export class AuthService {
     return this.currentUserSubject.value?.role === 'admin';
   }
 
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  isLoggedIn(): boolean {
+    return this.isAuthenticated();
+  }
+
+  demoLogin(userType: 'user' | 'admin'): void {
+    const demoUser: User = {
+      id: userType === 'admin' ? 1 : 2,
+      name: userType === 'admin' ? 'Admin User' : 'Demo User',
+      email: userType === 'admin' ? 'admin@example.com' : 'user@example.com',
+      role: userType === 'admin' ? 'admin' : 'customer',
+      avatar: `https://ui-avatars.com/api/?name=${userType === 'admin' ? 'Admin' : 'User'}&background=2563eb&color=fff`
+    };
+
+    const demoToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkRlbW8gVXNlciIsImlhdCI6MTUxNjIzOTAyMn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    this.setCurrentUser(demoUser, demoToken, undefined, true);
+  }
+
+  updateProfile(updates: Partial<User>): Observable<AuthResponse> {
+    const currentUser = this.currentUserSubject.value;
+    if (!currentUser) {
+      return throwError(() => ({ message: 'No user logged in' }));
+    }
+
+    return this.http.put<AuthResponse>(`${this.API}/profile`, updates).pipe(
+      tap(response => {
+        if (response.success && response.user) {
+          this.currentUserSubject.next(response.user);
+          localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
+        }
+      }),
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API}/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword
+    }).pipe(
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  getUserOrders(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API}/user/orders`).pipe(
+      catchError(err => {
+        console.error('Error fetching user orders:', err);
+        return new Observable(observer => {
+          observer.next([]);
+          observer.complete();
+        });
+      })
+    );
+  }
+
   /* =======================
      INTERNAL HELPERS
   ======================= */
