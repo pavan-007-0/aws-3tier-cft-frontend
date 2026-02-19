@@ -37,10 +37,15 @@ export interface Product {
         <div class="card-front">
           <!-- Product Image Container -->
           <div class="image-container relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
-            <!-- Product Image -->
+            <!-- Skeleton Loader -->
+            <div *ngIf="!imageLoaded" class="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-700 dark:to-gray-600 animate-pulse"></div>
+            
+            <!-- Product Image with Lazy Loading -->
             <img 
               [src]="getProductImageUrl()" 
               [alt]="product.name"
+              loading="lazy"
+              decoding="async"
               class="product-image w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               [class.loaded]="imageLoaded"
               (load)="onImageLoad()"
