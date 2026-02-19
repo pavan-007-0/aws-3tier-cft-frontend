@@ -26,16 +26,10 @@ export class ProductDetailsComponent implements OnInit {
     console.log('product-details: route id=', id);
 
     this.productService.getProductById(id).subscribe({
-      next: (data: any) => {
-        console.log('product-details: raw API response ->', data);
-
-        // backend returns: { product: {...}, success: true }
-        this.product = data.product;
-        console.log('product-details: resolved product ->', this.product);
-
+      next: (product: Product) => {
+        console.log('product-details: resolved product ->', product);
+        this.product = product;
         this.loading = false;
-
-        // force angular to refresh UI
         this.cdr.detectChanges();
       },
       error: (err) => {
