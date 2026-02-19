@@ -1,3 +1,4 @@
+import { environment } from 'src/environments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
@@ -66,7 +67,7 @@ export interface AnalyticsDashboard {
   providedIn: 'root'
 })
 export class AnalyticsService {
-  private readonly API_URL = 'http://127.0.0.1:5000/api/analytics';
+  private readonly API_URL = `${environment.apiUrl}/analytics`;
   private analyticsSubject = new BehaviorSubject<AnalyticsDashboard | null>(null);
   
   public analytics$ = this.analyticsSubject.asObservable();
