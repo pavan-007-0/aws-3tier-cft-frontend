@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface EmailTemplate {
   id: string;
@@ -82,7 +83,7 @@ export interface MarketingCampaign {
   providedIn: 'root'
 })
 export class NotificationService {
-  private readonly API_URL = 'http://127.0.0.1:5000/api/notifications';
+  private apiUrl = environment.apiUrl + '/notifications';
   private notificationsSubject = new BehaviorSubject<any[]>([]);
   private templatesSubject = new BehaviorSubject<EmailTemplate[]>([]);
   private settingsSubject = new BehaviorSubject<NotificationSettings | null>(null);
@@ -111,6 +112,23 @@ export class NotificationService {
 
   showInfo(message: string, title: string = 'Info'): void {
     this.showNotification('info', message, title);
+  }
+
+  // Shorter method names for convenience
+  success(message: string, title: string = 'Success'): void {
+    this.showSuccess(message, title);
+  }
+
+  error(message: string, title: string = 'Error'): void {
+    this.showError(message, title);
+  }
+
+  warning(message: string, title: string = 'Warning'): void {
+    this.showWarning(message, title);
+  }
+
+  info(message: string, title: string = 'Info'): void {
+    this.showInfo(message, title);
   }
 
   private showNotification(type: string, message: string, title: string): void {
@@ -143,7 +161,7 @@ export class NotificationService {
 
   // Email Templates Management
   getEmailTemplates(): Observable<EmailTemplate[]> {
-    return this.http.get<{success: boolean, templates: EmailTemplate[]}>(`${this.API_URL}/templates`).pipe(
+    return this.http.get<{success: boolean, templates: EmailTemplate[]}>(`${this.apiUrl}/templates`).pipe(
       map(response => {
         const templates = response.templates || this.getDemoTemplates();
         this.templatesSubject.next(templates);
@@ -161,7 +179,7 @@ export class NotificationService {
   }
 
   deleteEmailTemplate(templateId: string): Observable<any> {
-    return this.http.delete<{success: boolean}>(`${this.API_URL}/templates/${templateId}`).pipe(
+    return this.http.delete<{success: boolean}>(`${this.apiUrl}/templates/${templateId}`).pipe(
       map(response => {
         if (response.success) {
           this.loadTemplates();
@@ -178,7 +196,7 @@ export class NotificationService {
 
   // Marketing Campaigns
   getMarketingCampaigns(): Observable<MarketingCampaign[]> {
-    return this.http.get<{success: boolean, campaigns: MarketingCampaign[]}>(`${this.API_URL}/campaigns`).pipe(
+    return this.http.get<{success: boolean, campaigns: MarketingCampaign[]}>(`${this.apiUrl}/campaigns`).pipe(
       map(response => response.campaigns || this.getDemoCampaigns()),
       catchError(() => {
         return new Observable<MarketingCampaign[]>(observer => {
@@ -191,7 +209,7 @@ export class NotificationService {
 
   // Notification Settings
   getNotificationSettings(): Observable<NotificationSettings> {
-    return this.http.get<{success: boolean, settings: NotificationSettings}>(`${this.API_URL}/settings`).pipe(
+    return this.http.get<{success: boolean, settings: NotificationSettings}>(`${this.apiUrl}/settings`).pipe(
       map(response => {
         const settings = response.settings || this.getDemoSettings();
         this.settingsSubject.next(settings);
@@ -209,7 +227,7 @@ export class NotificationService {
   }
 
   updateNotificationSettings(settings: Partial<NotificationSettings>): Observable<NotificationSettings> {
-    return this.http.put<{success: boolean, settings: NotificationSettings}>(`${this.API_URL}/settings`, settings).pipe(
+    return this.http.put<{success: boolean, settings: NotificationSettings}>(`${this.apiUrl}/settings`, settings).pipe(
       map(response => {
         if (response.success && response.settings) {
           this.settingsSubject.next(response.settings);
@@ -226,7 +244,7 @@ export class NotificationService {
 
   // Test Notifications
   testEmailConfiguration(): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/test/email`, {}).pipe(
+    return this.http.post<any>(`${this.apiUrl}/test/email`, {}).pipe(
       catchError(() => {
         return new Observable(observer => {
           observer.next({ success: true, message: 'Test email sent successfully' });

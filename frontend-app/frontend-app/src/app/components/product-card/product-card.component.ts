@@ -39,11 +39,12 @@ export interface Product {
           <div class="image-container relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
             <!-- Product Image -->
             <img 
-              [src]="product.image || '/assets/placeholder-product.jpg'" 
+              [src]="getProductImageUrl()" 
               [alt]="product.name"
               class="product-image w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               [class.loaded]="imageLoaded"
               (load)="onImageLoad()"
+              (error)="onImageError($event)"
             />
             
             <!-- Image Overlay -->
@@ -333,8 +334,39 @@ export class ProductCardComponent implements OnInit {
     this.checkWishlistStatus();
   }
 
+  /* ===== IMAGE OPTIMIZATION ===== */
+  
+  getProductImageUrl(): string {
+    if (!this.product.image) {
+      return '/assets/placeholder.jpg';
+    }
+
+    let imageUrl = this.product.image;
+
+    // Handle relative URLs
+    if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+      imageUrl = `/assets/products/${imageUrl}`;
+    }
+
+    // Add cache buster to prevent image repetition issues
+    const separator = imageUrl.includes('?') ? '&' : '?';
+    return `${imageUrl}${separator}v=${this.product.id}_${this.getImageCacheBuster()}`;
+  }
+
+  private getImageCacheBuster(): string {
+    // Use product ID + a hash of the time to ensure unique URLs
+    return Math.floor(Date.now() / (60 * 1000)).toString(); // Changes every minute
+  }
+
   onImageLoad() {
     this.imageLoaded = true;
+  }
+
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    console.warn(`Product image failed to load: ${img.src} for product ${this.product.id}`);
+    img.src = '/assets/placeholder.jpg';
+    img.classList.add('image-error');
   }
 
   onMouseEnter(event: MouseEvent) {

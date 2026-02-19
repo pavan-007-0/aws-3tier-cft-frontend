@@ -19,10 +19,15 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'profile', component: ProfileComponent },
   { path: 'admin', component: AdminComponent },
+  // Redirect missing routes to products
+  { path: 'categories', redirectTo: '/products' },
+  { path: 'deals', redirectTo: '/products' },
   {
     path: 'order-success',
     loadComponent: () =>
       import('./pages/order-success/order-success.component')
         .then(m => m.OrderSuccessComponent)
-  }
+  },
+  // Wildcard - redirect unknown routes to home
+  { path: '**', redirectTo: '' }
 ];

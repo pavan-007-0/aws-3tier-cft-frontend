@@ -29,7 +29,6 @@
               "src/styles.css"
             ],
             "outputMode": "static",
-            "prerender": false,
             "ssr": false
           },
           "configurations": {

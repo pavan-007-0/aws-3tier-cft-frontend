@@ -2,34 +2,79 @@
 
   <!-- CUSTOMER FORM -->
   <div class="checkout-left">
-    <h2 class="section-title">Customer Details</h2>
+    <h2 class="section-title">Shipping Details</h2>
 
     <form (ngSubmit)="placeOrder()" class="checkout-form">
 
       <div class="form-group">
-        <label>Name</label>
-        <input type="text" [(ngModel)]="customer.name" name="name" required>
+        <label>Full Name</label>
+        <input type="text" [(ngModel)]="customer.name" name="name" placeholder="Enter your full name" required>
       </div>
 
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" [(ngModel)]="customer.email" name="email" required>
+        <label>Email Address</label>
+        <input type="email" [(ngModel)]="customer.email" name="email" placeholder="your@email.com" required>
       </div>
 
       <div class="form-group">
-        <label>Phone</label>
-        <input type="text" [(ngModel)]="customer.phone" name="phone" required>
+        <label>Phone Number</label>
+        <input type="tel" [(ngModel)]="customer.phone" name="phone" placeholder="Your phone number" required>
       </div>
 
+      <hr class="form-divider">
+      
+      <h3 class="address-title">Shipping Address</h3>
+
       <div class="form-group">
-        <label>Address</label>
-        <textarea [(ngModel)]="customer.address" name="address" required></textarea>
+        <label>Street Address</label>
+        <input type="text" [(ngModel)]="customer.street" name="street" placeholder="Street address" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" [(ngModel)]="customer.city" name="city" placeholder="City" required>
+        </div>
+        <div class="form-group">
+          <label>State/Province</label>
+          <input type="text" [(ngModel)]="customer.state" name="state" placeholder="State" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>ZIP/Postal Code</label>
+          <input type="text" [(ngModel)]="customer.zip_code" name="zip_code" placeholder="ZIP code" required>
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" [(ngModel)]="customer.country" name="country" placeholder="Country" required>
+        </div>
+      </div>
+
+      <hr class="form-divider">
+      
+      <h3 class="payment-title">Payment Method</h3>
+
+      <div class="payment-options">
+        <label class="radio-label">
+          <input type="radio" [(ngModel)]="paymentMethod" value="card" name="payment">
+          <span>Credit/Debit Card</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" [(ngModel)]="paymentMethod" value="upi" name="payment">
+          <span>UPI</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" [(ngModel)]="paymentMethod" value="netbanking" name="payment">
+          <span>Net Banking</span>
+        </label>
       </div>
 
       <p class="error" *ngIf="error">{{ error }}</p>
 
-      <button class="checkout-btn" type="submit" [disabled]="submitting">
-        {{ submitting ? 'Placing Order...' : 'Place Order' }}
+      <button class="checkout-btn primary" type="submit" [disabled]="submitting">
+        {{ submitting ? 'Processing...' : 'Place Order' }}
       </button>
 
     </form>
@@ -41,23 +86,40 @@
 
     <h2 class="section-title">Order Summary</h2>
 
-    <div class="summary-card" *ngFor="let item of cartItems">
-
-      <img [src]="item.image" alt="{{ item.name }}">
-
-      <div class="summary-info">
-        <h3>{{ item.name }}</h3>
-        <p>Qty: {{ item.quantity }}</p>
-        <p class="price">₹{{ subtotal(item) }}</p>
+    <div class="cart-items">
+      <div class="summary-card" *ngFor="let item of cartItems">
+        <img [src]="item.image" alt="{{ item.name }}" class="item-image">
+        <div class="summary-info">
+          <h3>{{ item.name }}</h3>
+          <p class="quantity">Qty: {{ item.quantity }}</p>
+          <p class="price">₹{{ item.price | number:'1.2-2' }}</p>
+        </div>
+        <div class="item-total">₹{{ subtotal(item) | number:'1.2-2' }}</div>
       </div>
-
     </div>
 
     <div class="total-box">
-      <p>Subtotal: <span>₹{{ total() }}</span></p>
-      <p>Delivery: <span>₹0</span></p>
+      <div class="price-row">
+        <span>Subtotal:</span>
+        <span>₹{{ total() | number:'1.2-2' }}</span>
+      </div>
+      <div class="price-row">
+        <span>Tax (8%):</span>
+        <span>₹{{ getTax() | number:'1.2-2' }}</span>
+      </div>
+      <div class="price-row" *ngIf="getShipping() > 0">
+        <span>Shipping:</span>
+        <span>₹{{ getShipping() | number:'1.2-2' }}</span>
+      </div>
+      <div class="price-row" *ngIf="getShipping() === 0" class="free-shipping">
+        <span>Shipping:</span>
+        <span class="free">FREE</span>
+      </div>
       <hr>
-      <p class="final-total">Total: <span>₹{{ total() }}</span></p>
+      <div class="price-row final-total">
+        <span>Total:</span>
+        <span>₹{{ getFinalTotal() | number:'1.2-2' }}</span>
+      </div>
     </div>
 
   </div>

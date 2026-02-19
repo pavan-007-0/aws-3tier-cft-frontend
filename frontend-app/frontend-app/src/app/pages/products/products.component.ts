@@ -25,6 +25,8 @@ export class ProductsComponent implements OnInit, OnDestroy {
   categories: string[] = ['all'];
 
   private subscriptions: Subscription[] = [];
+  private productCache: Map<string, any> = new Map();
+  private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   constructor(
     private productService: ProductService,
@@ -32,8 +34,14 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Use local products immediately (stable + fast)
-    this.loadSampleProducts();
+    this.loadProductsFromAPI();
+    
+    // Refresh products every 10 minutes to handle production caching issues
+    setInterval(() => {
+      console.log('Auto-refreshing products cache...');
+      this.productCache.clear();
+      this.loadProductsFromAPI();
+    }, 10 * 60 * 1000);
   }
 
   ngOnDestroy(): void {
@@ -41,8 +49,74 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   /* ---------------------------
-     PRODUCT LOADING
+     PRODUCT LOADING FROM API
   ---------------------------- */
+
+  private loadProductsFromAPI(): void {
+    this.loading = true;
+    this.error = '';
+
+    const cacheKey = 'products_all';
+    const cached = this.productCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+      this.products = cached.data;
+      this.filteredProducts = [...this.products];
+      this.extractCategories();
+      this.loading = false;
+      return;
+    }
+
+    const sub = this.productService.getProducts().subscribe({
+      next: (data: any) => {
+        // Handle both direct array and paginated response
+        this.products = Array.isArray(data) ? data : (data.products || data.data || []);
+        
+        // Ensure all products have valid image URLs with cache busters
+        this.products = this.products.map(product => ({
+          ...product,
+          image: this.sanitizeImageUrl(product.image)
+        }));
+
+        this.filteredProducts = [...this.products];
+        this.extractCategories();
+        
+        // Cache the results
+        this.productCache.set(cacheKey, {
+          data: this.products,
+          timestamp: Date.now()
+        });
+
+        this.loading = false;
+        this.error = '';
+      },
+      error: (err) => {
+        console.error('Failed to load products from API:', err);
+        this.error = 'Failed to load products. Please try again.';
+        this.loading = false;
+        
+        // Fallback to sample products if API fails
+        this.loadSampleProducts();
+      }
+    });
+
+    this.subscriptions.push(sub);
+  }
+
+  private sanitizeImageUrl(imageUrl: string): string {
+    if (!imageUrl) {
+      return '/assets/placeholder.jpg';
+    }
+
+    // If URL doesn't start with /, it might be relative to products
+    if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+      return `/assets/products/${imageUrl}`;
+    }
+
+    // Add cache buster to prevent image caching issues
+    const separator = imageUrl.includes('?') ? '&' : '?';
+    return `${imageUrl}${separator}v=${Date.now()}`;
+  }
 
   private loadSampleProducts(): void {
     this.products = [
@@ -248,12 +322,22 @@ export class ProductsComponent implements OnInit, OnDestroy {
   }
 
   /* ---------------------------
-     IMAGE SAFETY (CRITICAL)
+     IMAGE SAFETY (CRITICAL) - PRODUCTION FIX
   ---------------------------- */
 
   onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
-    img.src = '/assets/products/placeholder.jpg';
+    console.warn(`Image failed to load: ${img.src}`);
+    
+    // Use a stable placeholder, not the mobile image
+    img.src = '/assets/placeholder.jpg';
+    
+    // Add error class for styling
+    img.classList.add('image-error');
+  }
+
+  getImageUrlWithBuster(product: Product): string {
+    return this.sanitizeImageUrl(product.image);
   }
 
   /* ---------------------------

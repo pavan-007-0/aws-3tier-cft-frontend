@@ -22,11 +22,12 @@
       <!-- Image Wrapper -->
       <div class="aspect-square mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden h-48">
         <img
-          [src]="product.image"
+          [src]="getImageUrlWithBuster(product)"
           [alt]="product.name"
           class="w-full h-full object-cover"
           loading="lazy"
           (error)="onImageError($event)"
+          [title]="product.name"
         />
       </div>
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface Theme {
   id: string;
@@ -182,7 +183,6 @@ export const AVAILABLE_THEMES: Theme[] = [
 export class ThemeService {
   private readonly THEME_KEY = 'selected-theme';
   private readonly DEFAULT_THEME = 'light-blue';
-  private readonly API_URL = 'http://127.0.0.1:5000/api';
   
   private currentThemeSubject = new BehaviorSubject<Theme>(
     this.getThemeById(this.DEFAULT_THEME)
@@ -252,27 +252,68 @@ export class ThemeService {
   private updateCSSVariables(theme: Theme): void {
     const root = document.documentElement;
     
-    // Set theme colors
+    // Set theme colors as hex (for non-Tailwind use)
     root.style.setProperty('--theme-primary', theme.colors.primary);
     root.style.setProperty('--theme-secondary', theme.colors.secondary);
     root.style.setProperty('--theme-accent', theme.colors.accent);
     
-    // Generate color palette from primary color
+    // Generate color palette from primary, secondary, and accent colors
     const primary = theme.colors.primary;
     const secondary = theme.colors.secondary;
+    const accent = theme.colors.accent;
     
-    // Set Tailwind CSS variables with hex values
-    root.style.setProperty('--color-primary-50', this.lighten(primary, 95));
-    root.style.setProperty('--color-primary-100', this.lighten(primary, 90));
-    root.style.setProperty('--color-primary-200', this.lighten(primary, 80));
-    root.style.setProperty('--color-primary-300', this.lighten(primary, 60));
-    root.style.setProperty('--color-primary-400', this.lighten(primary, 30));
-    root.style.setProperty('--color-primary-500', primary);
-    root.style.setProperty('--color-primary-600', secondary);
-    root.style.setProperty('--color-primary-700', this.darken(secondary, 10));
-    root.style.setProperty('--color-primary-800', this.darken(secondary, 25));
-    root.style.setProperty('--color-primary-900', this.darken(secondary, 40));
-    root.style.setProperty('--color-primary-950', this.darken(secondary, 55));
+    // Convert hex to RGB for Tailwind CSS variables
+    const primaryRGB = this.hexToRGB(primary);
+    const secondaryRGB = this.hexToRGB(secondary);
+    const accentRGB = this.hexToRGB(accent);
+    
+    // Set Primary color palette (as RGB strings)
+    root.style.setProperty('--color-primary-50', this.lightenRGB(primaryRGB, 95));
+    root.style.setProperty('--color-primary-100', this.lightenRGB(primaryRGB, 90));
+    root.style.setProperty('--color-primary-200', this.lightenRGB(primaryRGB, 80));
+    root.style.setProperty('--color-primary-300', this.lightenRGB(primaryRGB, 60));
+    root.style.setProperty('--color-primary-400', this.lightenRGB(primaryRGB, 30));
+    root.style.setProperty('--color-primary-500', primaryRGB);
+    root.style.setProperty('--color-primary-600', secondaryRGB);
+    root.style.setProperty('--color-primary-700', this.darkenRGB(secondaryRGB, 10));
+    root.style.setProperty('--color-primary-800', this.darkenRGB(secondaryRGB, 25));
+    root.style.setProperty('--color-primary-900', this.darkenRGB(secondaryRGB, 40));
+    root.style.setProperty('--color-primary-950', this.darkenRGB(secondaryRGB, 55));
+    
+    // Set Secondary color palette
+    root.style.setProperty('--color-secondary-50', this.lightenRGB(secondaryRGB, 95));
+    root.style.setProperty('--color-secondary-100', this.lightenRGB(secondaryRGB, 90));
+    root.style.setProperty('--color-secondary-200', this.lightenRGB(secondaryRGB, 80));
+    root.style.setProperty('--color-secondary-300', this.lightenRGB(secondaryRGB, 60));
+    root.style.setProperty('--color-secondary-400', this.lightenRGB(secondaryRGB, 30));
+    root.style.setProperty('--color-secondary-500', secondaryRGB);
+    root.style.setProperty('--color-secondary-600', this.darkenRGB(secondaryRGB, 10));
+    root.style.setProperty('--color-secondary-700', this.darkenRGB(secondaryRGB, 20));
+    root.style.setProperty('--color-secondary-800', this.darkenRGB(secondaryRGB, 30));
+    root.style.setProperty('--color-secondary-900', this.darkenRGB(secondaryRGB, 45));
+    root.style.setProperty('--color-secondary-950', this.darkenRGB(secondaryRGB, 60));
+    
+    // Set Accent color palette
+    root.style.setProperty('--color-accent-50', this.lightenRGB(accentRGB, 95));
+    root.style.setProperty('--color-accent-100', this.lightenRGB(accentRGB, 90));
+    root.style.setProperty('--color-accent-200', this.lightenRGB(accentRGB, 80));
+    root.style.setProperty('--color-accent-300', this.lightenRGB(accentRGB, 60));
+    root.style.setProperty('--color-accent-400', this.lightenRGB(accentRGB, 30));
+    root.style.setProperty('--color-accent-500', accentRGB);
+    root.style.setProperty('--color-accent-600', this.darkenRGB(accentRGB, 10));
+    root.style.setProperty('--color-accent-700', this.darkenRGB(accentRGB, 20));
+    root.style.setProperty('--color-accent-800', this.darkenRGB(accentRGB, 30));
+    root.style.setProperty('--color-accent-900', this.darkenRGB(accentRGB, 45));
+    root.style.setProperty('--color-accent-950', this.darkenRGB(accentRGB, 60));
+  }
+
+  private hexToRGB(hex: string): string {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return '59 130 246'; // fallback to blue
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    return `${r} ${g} ${b}`;
   }
 
   private lighten(color: string, percent: number): string {
@@ -286,6 +327,15 @@ export class ThemeService {
       (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
   }
 
+  private lightenRGB(rgbString: string, percent: number): string {
+    const [r, g, b] = rgbString.split(' ').map(x => parseInt(x));
+    const amt = Math.round(2.55 * percent);
+    const newR = Math.min(255, r + amt);
+    const newG = Math.min(255, g + amt);
+    const newB = Math.min(255, b + amt);
+    return `${newR} ${newG} ${newB}`;
+  }
+
   private darken(color: string, percent: number): string {
     const num = parseInt(color.replace("#", ""), 16);
     const amt = Math.round(2.55 * percent);
@@ -295,6 +345,15 @@ export class ThemeService {
     return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
       (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
       (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+  }
+
+  private darkenRGB(rgbString: string, percent: number): string {
+    const [r, g, b] = rgbString.split(' ').map(x => parseInt(x));
+    const amt = Math.round(2.55 * percent);
+    const newR = Math.max(0, r - amt);
+    const newG = Math.max(0, g - amt);
+    const newB = Math.max(0, b - amt);
+    return `${newR} ${newG} ${newB}`;
   }
 
   getAvailableThemes(): Theme[] {
@@ -360,7 +419,7 @@ export class ThemeService {
         is_dark: theme.isDark
       };
 
-      this.http.post(`${this.API_URL}/user/theme`, themeData, {
+      this.http.post(`${environment.apiUrl}/user/theme`, themeData, {
         headers: { Authorization: `Bearer ${token}` }
       }).subscribe({
         next: () => console.log('Theme synced to user profile'),
