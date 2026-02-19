@@ -216,7 +216,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     if (this.searchTerm) {
       filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(this.searchTerm) ||
-        p.description.toLowerCase().includes(this.searchTerm)
+        (p.description && p.description.toLowerCase().includes(this.searchTerm))
       );
     }
 

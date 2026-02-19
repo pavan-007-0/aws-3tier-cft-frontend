@@ -79,7 +79,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   setupFormWatchers() {
     // Watch for same as shipping checkbox
-    const sameAsShippingSubscription = this.checkoutForm.get('sameAsShipping')?.valueChanges.subscribe(value => {
+    const sameAsShippingSubscription = this.checkoutForm.get('sameAsShipping')?.valueChanges.subscribe((value: boolean) => {
       const billingFields = ['billingAddress', 'billingCity', 'billingState', 'billingZipCode', 'billingCountry'];
       
       if (value) {

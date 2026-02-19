@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
+import { AuthService, AuthResponse } from '../services/auth.service';
 import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   private isRefreshing = false;
-  private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
 
   constructor(
     private authService: AuthService,
@@ -61,7 +61,7 @@ export class AuthInterceptor implements HttpInterceptor {
       
       if (refreshToken) {
         return this.authService.refreshToken().pipe(
-          switchMap((response: any) => {
+          switchMap((response: AuthResponse) => {
             this.isRefreshing = false;
             
             if (response.success && response.access_token) {
@@ -90,7 +90,7 @@ export class AuthInterceptor implements HttpInterceptor {
     } else {
       // Wait for refresh to complete
       return this.refreshTokenSubject.pipe(
-        filter(token => token !== null),
+        filter((token): token is string => token !== null),
         take(1),
         switchMap((token) => next.handle(this.addTokenToRequest(request, token)))
       );
