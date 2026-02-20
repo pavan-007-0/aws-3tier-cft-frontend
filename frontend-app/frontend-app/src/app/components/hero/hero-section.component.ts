@@ -1,12 +1,13 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AnimatedButtonComponent } from '../ui/animated-button.component';
 
 @Component({
   selector: 'app-hero-section',
   standalone: true,
   imports: [CommonModule, RouterModule, AnimatedButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="hero-section relative overflow-hidden min-h-screen flex items-center">
       <!-- Animated Background -->
@@ -339,12 +340,16 @@ export class HeroSectionComponent implements OnInit, OnDestroy {
   }
 
   navigateToProducts() {
-    // Navigate to products page
-    console.log('Navigate to products');
+    // Navigate to products page with loading state
+    this.router.navigate(['/products']).catch(err => {
+      console.error('Navigation error:', err);
+    });
   }
 
   playDemo() {
     // Play demo video or show modal
     console.log('Play demo');
   }
+
+  constructor(private router: Router) {}
 }

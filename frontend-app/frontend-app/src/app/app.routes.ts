@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, PreloadAllModules } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { ProductsComponent } from './pages/products/products.component';
 import { ProductDetailsComponent } from './pages/product-details/product-details.component';

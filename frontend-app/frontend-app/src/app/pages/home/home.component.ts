@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ProductCardComponent } from '../../components/product-card/product-card.component';
 import { AnimatedButtonComponent } from '../../components/ui/animated-button.component';
 import { CartService } from '../../services/cart.service';
@@ -9,6 +9,7 @@ import { CartService } from '../../services/cart.service';
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, RouterModule, ProductCardComponent, AnimatedButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.html'
 })
 export class HomeComponent {
@@ -71,7 +72,11 @@ export class HomeComponent {
     }
   ];
 
-  constructor(private cartService: CartService) {}
+  constructor(private cartService: CartService, private router: Router) {}
+
+  navigateToShop() {
+    this.router.navigate(['/products']).catch(err => console.error('Navigation error:', err));
+  }
 
   onAddToCart(product: any) {
     const result = this.cartService.quickAdd(product);

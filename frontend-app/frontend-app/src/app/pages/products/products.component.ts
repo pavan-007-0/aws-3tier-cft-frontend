@@ -1,6 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
 import { ProductService, Product } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
 
@@ -8,6 +10,7 @@ import { CartService } from '../../services/cart.service';
   selector: 'app-products',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './products.html',
   styleUrls: ['./products.css']
 })
@@ -27,10 +30,15 @@ export class ProductsComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
   private productCache: Map<string, any> = new Map();
   private cacheExpiry = 5 * 60 * 1000; // 5 minutes
+  private destroy$ = new Subject<void>();
+  private isLoadingProducts = false;
 
   constructor(
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -39,6 +47,20 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private resetProductsState(): void {
+    this.products = [];
+    this.filteredProducts = [];
+    this.loading = true;
+    this.error = '';
+    this.searchTerm = '';
+    this.selectedCategory = 'all';
+    this.isLoadingProducts = false;
+    this.cdr.markForCheck();
+    this.loadProductsFromAPI();
   }
 
   /* ---------------------------
@@ -46,8 +68,15 @@ export class ProductsComponent implements OnInit, OnDestroy {
   ---------------------------- */
 
   private loadProductsFromAPI(): void {
+    // Prevent double loading
+    if (this.isLoadingProducts || this.loading) {
+      return;
+    }
+
+    this.isLoadingProducts = true;
     this.loading = true;
     this.error = '';
+    this.cdr.markForCheck();
 
     const cacheKey = 'products_all';
     const cached = this.productCache.get(cacheKey);
@@ -57,36 +86,40 @@ export class ProductsComponent implements OnInit, OnDestroy {
       this.filteredProducts = [...this.products];
       this.extractCategories();
       this.loading = false;
+      this.isLoadingProducts = false;
+      this.cdr.markForCheck();
       return;
     }
 
-    const sub = this.productService.getProducts().subscribe({
-      next: (data: any) => {
-        // Handle both direct array and paginated response
-        this.products = Array.isArray(data) ? data : (data.products || data.data || []);
-        
-        // Ensure all products have valid image URLs with cache busters
-        this.products = this.products.map(product => ({
-          ...product,
-          image: this.sanitizeImageUrl(product.image)
-        }));
+    const sub = this.productService.getProducts()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data: any) => {
+          // Handle both direct array and paginated response
+          this.products = Array.isArray(data) ? data : (data.products || data.data || []);
+          
+          // Ensure all products have valid image URLs
+          this.products = this.products.map(product => ({
+            ...product,
+            image: this.sanitizeImageUrl(product.image)
+          }));
 
-        this.filteredProducts = [...this.products];
-        this.extractCategories();
-        
-        // Cache the results
-        this.productCache.set(cacheKey, {
-          data: this.products,
-          timestamp: Date.now()
-        });
+          this.filteredProducts = [...this.products];
+          this.extractCategories();
+          
+          // Cache the results
+          this.productCache.set(cacheKey, {
+            data: this.products,
+            timestamp: Date.now()
+          });
 
-        this.loading = false;
-        this.error = '';
-      },
-      error: (err) => {
-        console.error('Failed to load products from API:', err);
-        this.error = 'Failed to load products. Please try again.';
-        this.loading = false;
+          this.loading = false;
+          this.isLoadingProducts = false;
+          this.error = '';
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to load products from API:', err);\n          this.error = 'Failed to load products. Please try again.';\n          this.loading = false;\n          this.isLoadingProducts = false;\n          this.cdr.markForCheck();
         
         // Fallback to sample products if API fails
         this.loadSampleProducts();

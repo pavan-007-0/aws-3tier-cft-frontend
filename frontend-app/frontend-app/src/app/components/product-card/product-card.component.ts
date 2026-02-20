@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AnimatedButtonComponent } from '../ui/animated-button.component';
@@ -22,6 +22,7 @@ export interface Product {
   selector: 'app-product-card',
   standalone: true,
   imports: [CommonModule, RouterModule, AnimatedButtonComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div 
       #cardElement
