@@ -1,10 +1,28 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
-import { filter, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { ProductService, Product } from '../../services/product.service';
 import { CartService } from '../../services/cart.service';
+
+/**
+ * Maps product name keywords to actual image filenames in /assets/products/.
+ * This ensures products get the correct image even if the DB stores a different filename.
+ */
+const PRODUCT_IMAGE_MAP: { keywords: string[]; image: string }[] = [
+  { keywords: ['earbuds', 'earbud', 'airpods', 'buds', 'bluetooth earbuds'], image: 'earbuds.jpg' },
+  { keywords: ['glasses', 'glass', 'meta', 'ar', 'vr', 'quest'], image: 'glasses.jpg' },
+  { keywords: ['headphones', 'headphone', 'headset', 'over-ear'], image: 'headphones.jpg' },
+  { keywords: ['laptop', 'stand', 'macbook', 'ipad'], image: 'laptopstand.jpg' },
+  { keywords: ['mobile', 'phone', 'smartphone', 'iphone'], image: 'mobile.jpg' },
+  { keywords: ['mouse', 'gaming mouse'], image: 'mouse.jpg' },
+  { keywords: ['power', 'powerbank', 'bank', 'charger'], image: 'powerbank.jpg' },
+  { keywords: ['watch', 'smartwatch', 'wearable'], image: 'smartwatch.jpg' },
+  { keywords: ['speaker', 'bluetooth speaker', 'portable speaker'], image: 'speaker.jpg' },
+  { keywords: ['webcam', 'camera', 'cam', 'streaming'], image: 'webcam.jpg' },
+  { keywords: ['keyboard', 'magic keyboard', 'keys'], image: 'laptopstand.jpg' },
+];
 
 @Component({
   selector: 'app-products',
@@ -39,7 +57,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadProductsFromAPI();
@@ -69,7 +87,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   private loadProductsFromAPI(): void {
     // Prevent double loading
-    if (this.isLoadingProducts || this.loading) {
+    if (this.isLoadingProducts) {
       return;
     }
 
@@ -80,7 +98,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
     const cacheKey = 'products_all';
     const cached = this.productCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
       this.products = cached.data;
       this.filteredProducts = [...this.products];
@@ -96,17 +114,18 @@ export class ProductsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data: any) => {
           // Handle both direct array and paginated response
-          this.products = Array.isArray(data) ? data : (data.products || data.data || []);
-          
-          // Ensure all products have valid image URLs
-          this.products = this.products.map(product => ({
+          const rawProducts = Array.isArray(data) ? data : (data.products || data.data || []);
+
+          // Resolve correct image for every product ONCE at load time
+          this.products = rawProducts.map((product: any) => ({
             ...product,
-            image: this.sanitizeImageUrl(product.image)
+            category: product.category || product.category_name || '',
+            image: this.resolveProductImage(product)
           }));
 
           this.filteredProducts = [...this.products];
           this.extractCategories();
-          
+
           // Cache the results
           this.productCache.set(cacheKey, {
             data: this.products,
@@ -127,158 +146,181 @@ export class ProductsComponent implements OnInit, OnDestroy {
           // Fallback to sample products if API fails
           this.loadSampleProducts();
         }
-      }
-    });
+      });
 
     this.subscriptions.push(sub);
   }
 
-  private sanitizeImageUrl(imageUrl: string): string {
-    if (!imageUrl) {
-      return '/assets/placeholder.jpg';
+  /**
+   * Resolves the correct image for a product by:
+   * 1. Checking if the DB image filename exists in our known assets
+   * 2. Falling back to keyword matching against the product name
+   * 3. Using the default placeholder as a last resort
+   */
+  private resolveProductImage(product: any): string {
+    const KNOWN_ASSETS = [
+      'earbuds.jpg', 'glasses.jpg', 'headphones.jpg', 'laptopstand.jpg',
+      'mobile.jpg', 'mouse.jpg', 'powerbank.jpg', 'smartwatch.jpg',
+      'speaker.jpg', 'webcam.jpg'
+    ];
+
+    const dbImage = (product.image || '').replace(/^.*[\/\\]/, ''); // extract filename
+
+    // 1. If the DB image filename matches an existing asset, use it
+    if (dbImage && KNOWN_ASSETS.includes(dbImage)) {
+      return `/assets/products/${dbImage}`;
     }
 
-    // If URL doesn't start with /, it might be relative to products
-    if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-      return `/assets/products/${imageUrl}`;
+    // 2. Fall back: match product name keywords to an image
+    const name = (product.name || '').toLowerCase();
+    for (const mapping of PRODUCT_IMAGE_MAP) {
+      if (mapping.keywords.some(kw => name.includes(kw))) {
+        return `/assets/products/${mapping.image}`;
+      }
     }
 
-    // Return clean URL - rely on HTTP cache headers for caching
-    return imageUrl;
+    // 3. Last resort: placeholder
+    return '/assets/products/default-product.jpg';
   }
 
   private loadSampleProducts(): void {
     this.products = [
       {
         id: 1,
-        name: 'Premium Wireless Earbuds',
-        description: 'High-quality wireless earbuds with active noise cancellation.',
-        price: 199,
-        compare_price: 249,
+        name: 'Bluetooth Earbuds',
+        description: 'Waterproof, Touch controls, Active Noise Cancellation.',
+        price: 1299,
+        compare_price: 1428,
         image: '/assets/products/earbuds.jpg',
         brand: 'AudioTech',
         featured: true,
         rating: 4.8,
         review_count: 1250,
-        stock: 25,
-        category: 'Audio'
+        stock: 50,
+        category: 'Electronics'
       },
       {
         id: 2,
-        name: 'Smart Glasses Pro',
-        description: 'Revolutionary smart glasses with AR display.',
+        name: 'Gaming Mouse',
+        description: 'RGB lighting, 6 programmable buttons, 16000 DPI.',
         price: 899,
-        compare_price: 999,
-        image: '/assets/products/glasses.jpg',
-        brand: 'VisionTech',
-        rating: 4.6,
-        review_count: 456,
-        stock: 8,
-        category: 'Wearables'
+        compare_price: 998,
+        image: '/assets/products/mouse.jpg',
+        brand: 'GameGear',
+        featured: true,
+        rating: 4.7,
+        review_count: 1890,
+        stock: 40,
+        category: 'Accessories'
       },
       {
         id: 3,
-        name: 'Professional Headphones',
-        description: 'Studio-grade headphones with exceptional clarity.',
-        price: 299,
-        compare_price: 349,
-        image: '/assets/products/headphones.jpg',
-        brand: 'SoundMaster',
-        rating: 4.9,
-        review_count: 2100,
-        stock: 15,
-        category: 'Audio'
+        name: 'Laptop Stand',
+        description: 'Aluminum, Adjustable height, Ergonomic design.',
+        price: 849,
+        compare_price: 933,
+        image: '/assets/products/laptopstand.jpg',
+        brand: 'ErgoDesk',
+        featured: true,
+        rating: 4.7,
+        review_count: 890,
+        stock: 30,
+        category: 'Accessories'
       },
       {
         id: 4,
-        name: 'Ergonomic Laptop Stand',
-        description: 'Adjustable aluminum laptop stand.',
-        price: 79,
-        compare_price: 99,
-        image: '/assets/products/laptopstand.jpg',
-        brand: 'ErgoDesk',
-        rating: 4.7,
-        review_count: 890,
-        stock: 32,
-        category: 'Accessories'
+        name: 'Meta Glasses',
+        description: 'AR Smart Glasses, Immersive VR experience.',
+        price: 5999,
+        compare_price: 6598,
+        image: '/assets/products/glasses.jpg',
+        brand: 'Meta',
+        featured: true,
+        rating: 4.6,
+        review_count: 456,
+        stock: 15,
+        category: 'Electronics'
       },
       {
         id: 5,
-        name: 'Flagship Smartphone',
-        description: 'Latest flagship smartphone with premium camera.',
-        price: 1199,
-        compare_price: 1299,
-        image: '/assets/products/mobile.jpg',
-        brand: 'TechPhone',
-        rating: 4.8,
-        review_count: 3200,
-        stock: 18,
-        category: 'Smartphones'
-      },
-      {
-        id: 6,
-        name: 'Gaming Mouse Pro',
-        description: 'High-precision gaming mouse.',
-        price: 89,
-        compare_price: 119,
-        image: '/assets/products/mouse.jpg',
-        brand: 'GameGear',
-        rating: 4.7,
-        review_count: 1890,
-        stock: 45,
-        category: 'Gaming'
-      },
-      {
-        id: 7,
-        name: 'Ultra-Fast Power Bank',
-        description: 'High-capacity fast-charging power bank.',
-        price: 59,
-        compare_price: 79,
-        image: '/assets/products/powerbank.jpg',
-        brand: 'PowerMax',
-        rating: 4.5,
-        review_count: 2340,
-        stock: 67,
-        category: 'Accessories'
-      },
-      {
-        id: 8,
-        name: 'Smart Watch Elite',
-        description: 'Advanced smartwatch with health monitoring.',
-        price: 399,
-        compare_price: 449,
-        image: '/assets/products/smartwatch.jpg',
-        brand: 'WearTech',
-        rating: 4.8,
-        review_count: 1567,
-        stock: 22,
-        category: 'Wearables'
-      },
-      {
-        id: 9,
-        name: 'Bluetooth Speaker Max',
-        description: 'Portable speaker with 360° sound.',
-        price: 149,
-        compare_price: 179,
+        name: 'Portable Speaker',
+        description: '360° sound, Waterproof, 12hr battery.',
+        price: 599,
+        compare_price: 699,
         image: '/assets/products/speaker.jpg',
         brand: 'SoundWave',
         rating: 4.6,
         review_count: 1456,
-        stock: 38,
-        category: 'Audio'
+        stock: 45,
+        category: 'Electronics'
       },
       {
-        id: 10,
-        name: '4K Webcam Pro',
-        description: 'Ultra HD webcam for streaming.',
-        price: 129,
-        compare_price: 159,
+        id: 6,
+        name: 'Power Bank',
+        description: '20000mAh, Fast charging, USB-C.',
+        price: 499,
+        compare_price: 599,
+        image: '/assets/products/powerbank.jpg',
+        brand: 'PowerMax',
+        rating: 4.5,
+        review_count: 2340,
+        stock: 60,
+        category: 'Accessories'
+      },
+      {
+        id: 7,
+        name: 'Smart Mobile',
+        description: 'iPhone Pro, Triple camera, A17 Pro chip.',
+        price: 1199,
+        compare_price: 1399,
+        image: '/assets/products/mobile.jpg',
+        brand: 'Apple',
+        featured: true,
+        rating: 4.8,
+        review_count: 3200,
+        stock: 25,
+        category: 'Electronics'
+      },
+      {
+        id: 8,
+        name: 'Smart Watch',
+        description: 'GPS + Cellular, Health monitoring, AMOLED display.',
+        price: 429,
+        compare_price: 499,
+        image: '/assets/products/smartwatch.jpg',
+        brand: 'WearTech',
+        featured: true,
+        rating: 4.8,
+        review_count: 1567,
+        stock: 35,
+        category: 'Wearables'
+      },
+      {
+        id: 9,
+        name: 'Webcam HD Pro',
+        description: '4K Ultra HD, Auto-focus, Streaming ready.',
+        price: 349,
+        compare_price: 399,
         image: '/assets/products/webcam.jpg',
         brand: 'StreamCam',
         rating: 4.7,
         review_count: 987,
-        stock: 29,
-        category: 'Accessories'
+        stock: 30,
+        category: 'Electronics'
+      },
+      {
+        id: 10,
+        name: 'Headphones Pro',
+        description: 'Studio-grade, Over-ear, 40hr battery.',
+        price: 799,
+        compare_price: 899,
+        image: '/assets/products/headphones.jpg',
+        brand: 'SoundMaster',
+        featured: true,
+        rating: 4.9,
+        review_count: 2100,
+        stock: 20,
+        category: 'Electronics'
       }
     ];
 
@@ -356,17 +398,11 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
-    console.warn(`Image failed to load: ${img.src}`);
-    
-    // Use a stable placeholder, not the mobile image
-    img.src = '/assets/placeholder.jpg';
-    
-    // Add error class for styling
+    // Prevent infinite loop: only swap once
+    if (!img.src.endsWith('default-product.jpg')) {
+      img.src = '/assets/products/default-product.jpg';
+    }
     img.classList.add('image-error');
-  }
-
-  getImageUrlWithBuster(product: Product): string {
-    return this.sanitizeImageUrl(product.image);
   }
 
   /* ---------------------------
