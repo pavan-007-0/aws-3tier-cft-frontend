@@ -119,10 +119,14 @@ export class ProductsComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          console.error('Failed to load products from API:', err);\n          this.error = 'Failed to load products. Please try again.';\n          this.loading = false;\n          this.isLoadingProducts = false;\n          this.cdr.markForCheck();
-        
-        // Fallback to sample products if API fails
-        this.loadSampleProducts();
+          console.error('Failed to load products from API:', err);
+          this.error = 'Failed to load products. Please try again.';
+          this.loading = false;
+          this.isLoadingProducts = false;
+          this.cdr.markForCheck();
+          // Fallback to sample products if API fails
+          this.loadSampleProducts();
+        }
       }
     });
 

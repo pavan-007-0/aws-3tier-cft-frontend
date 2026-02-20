@@ -1,5 +1,5 @@
 import { ApplicationConfig, ErrorHandler } from '@angular/core';
-import { provideRouter, PreloadAllModules } from '@angular/router';
+import { provideRouter, PreloadAllModules, withPreloading } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { routes } from './app.routes';
@@ -9,10 +9,7 @@ import { GlobalErrorHandler } from './services/error-handler.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes, {
-      preloadingStrategy: PreloadAllModules,
-      onSameUrlNavigation: 'reload'
-    }),
+    provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(),
     provideAnimations(),
     {
