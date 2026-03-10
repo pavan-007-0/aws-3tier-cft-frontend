@@ -1,0 +1,61 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90mC:/Users/satya/OneDrive/Desktop/ecommerce -app/frontend-ecommerce/frontend-app/frontend-app[39m
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.1: Cart Drawer Fallback - mobile.jpg Bug[2m > [22m[2mshould use placeholder.jpg as fallback, not mobile.jpg
+[22m[39m✅ VERIFIED: Cart drawer fallback image is: /assets/placeholder.jpg
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.1: Cart Drawer Fallback - mobile.jpg Bug[2m > [22m[2mshould consistently use placeholder.jpg for multiple failed images (Property Test)
+[22m[39m✅ VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+✅ VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+✅ VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.2: Scroll Performance - Lag Bug[2m > [22m[2mshould maintain >= 55fps during scroll with 20+ products
+[22m[39m📊 Measured FPS: 43069.41 (with 25 products)
+✅ VERIFIED: Scroll performance is smooth at 43069.41 fps
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.2: Scroll Performance - Lag Bug[2m > [22m[2mshould not cause excessive re-renders during scroll (Property Test)
+[22m[39m✅ VERIFIED: Reasonable re-renders: 20 renders for 10 scroll events with 21 products
+✅ VERIFIED: Reasonable re-renders: 20 renders for 10 scroll events with 25 products
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.3: Image Flicker - Disappearing Images Bug[2m > [22m[2mshould not flicker when image loads during scroll
+[22m[39m✅ VERIFIED: No image flicker detected
+   Visibility states: [
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m
+]
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.3: Image Flicker - Disappearing Images Bug[2m > [22m[2mshould maintain stable image state across multiple load events (Property Test)
+[22m[39m✅ VERIFIED: Stable image state across 11 load events
+✅ VERIFIED: Stable image state across 18 load events
+✅ VERIFIED: Stable image state across 19 load events
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.4: Change Detection Count - Excessive Re-renders Bug[2m > [22m[2mshould have reasonable re-render count during scroll
+[22m[39m📊 Change detection count: 20 for 10 scroll events with 20 products
+✅ VERIFIED: Reasonable change detection cycles
+   Expected: < 30 cycles
+   Actual: 20 cycles
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.4: Change Detection Count - Excessive Re-renders Bug[2m > [22m[2mshould scale linearly with product count, not exponentially (Property Test)
+[22m[39m✅ VERIFIED: Linear scaling
+   Product count: 27
+   Scroll count: 5
+   Render count: 10
+   Expected max: 10
+   This shows O(m) complexity (optimal)
+✅ VERIFIED: Linear scaling
+   Product count: 30
+   Scroll count: 5
+   Render count: 10
+   Expected max: 10
+   This shows O(m) complexity (optimal)
+
+ [32m✓[39m src/app/bug-condition-exploration.spec.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 586[2mms[22m[39m
+       [33m[2m✓[22m[39m should not flicker when image loads during scroll [33m 567[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m8 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 21:04:42
+[2m   Duration [22m 1.53s[2m (transform 113ms, setup 0ms, import 576ms, tests 586ms, environment 0ms)[22m
+

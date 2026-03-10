@@ -1,0 +1,144 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90mC:/Users/satya/OneDrive/Desktop/ecommerce -app/frontend-ecommerce/frontend-app/frontend-app[39m
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.1: Cart Drawer Fallback - mobile.jpg Bug[2m > [22m[2mshould use placeholder.jpg as fallback, not mobile.jpg
+[22m[39mΓ£à VERIFIED: Cart drawer fallback image is: /assets/placeholder.jpg
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.1: Cart Drawer Fallback - mobile.jpg Bug[2m > [22m[2mshould consistently use placeholder.jpg for multiple failed images (Property Test)
+[22m[39mΓ£à VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+Γ£à VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+Γ£à VERIFIED: Multiple failed images use: [ [32m'/assets/placeholder.jpg'[39m ]
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.2: Scroll Performance - Lag Bug[2m > [22m[2mshould not cause excessive re-renders during scroll (Property Test)
+[22m[39mΓ£à VERIFIED: Reasonable re-renders: 20 renders for 10 scroll events with 47 products
+Γ£à VERIFIED: Reasonable re-renders: 20 renders for 10 scroll events with 36 products
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.3: Image Flicker - Disappearing Images Bug[2m > [22m[2mshould not flicker when image loads during scroll
+[22m[39mΓ£à VERIFIED: No image flicker detected
+   Visibility states: [
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m, [33mtrue[39m, [33mtrue[39m,
+  [33mtrue[39m
+]
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.3: Image Flicker - Disappearing Images Bug[2m > [22m[2mshould maintain stable image state across multiple load events (Property Test)
+[22m[39mΓ£à VERIFIED: Stable image state across 10 load events
+Γ£à VERIFIED: Stable image state across 6 load events
+Γ£à VERIFIED: Stable image state across 7 load events
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.4: Change Detection Count - Excessive Re-renders Bug[2m > [22m[2mshould have reasonable re-render count during scroll
+[22m[39m≡ƒôè Change detection count: 20 for 10 scroll events with 20 products
+Γ£à VERIFIED: Reasonable change detection cycles
+   Expected: < 30 cycles
+   Actual: 20 cycles
+
+[90mstdout[2m | src/app/bug-condition-exploration.spec.ts[2m > [22m[2mBug Condition Exploration Tests[2m > [22m[2mTest 1.4: Change Detection Count - Excessive Re-renders Bug[2m > [22m[2mshould scale linearly with product count, not exponentially (Property Test)
+[22m[39mΓ£à VERIFIED: Linear scaling
+   Product count: 29
+   Scroll count: 5
+   Render count: 10
+   Expected max: 10
+   This shows O(m) complexity (optimal)
+Γ£à VERIFIED: Linear scaling
+   Product count: 23
+   Scroll count: 5
+   Render count: 10
+   Expected max: 10
+   This shows O(m) complexity (optimal)
+
+ [31mΓ¥»[39m src/app/bug-condition-exploration.spec.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 636[2mms[22m[39m
+       [32mΓ£ô[39m should use placeholder.jpg as fallback, not mobile.jpg[32m 3[2mms[22m[39m
+       [32mΓ£ô[39m should consistently use placeholder.jpg for multiple failed images (Property Test)[32m 9[2mms[22m[39m
+[31m       [31m├ù[31m should maintain >= 55fps during scroll with 20+ products[39m[32m 6[2mms[22m[39m
+       [32mΓ£ô[39m should not cause excessive re-renders during scroll (Property Test)[32m 1[2mms[22m[39m
+       [33m[2mΓ£ô[22m[39m should not flicker when image loads during scroll [33m 611[2mms[22m[39m
+       [32mΓ£ô[39m should maintain stable image state across multiple load events (Property Test)[32m 2[2mms[22m[39m
+       [32mΓ£ô[39m should have reasonable re-render count during scroll[32m 1[2mms[22m[39m
+       [32mΓ£ô[39m should scale linearly with product count, not exponentially (Property Test)[32m 1[2mms[22m[39m
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (:String) [],    
+ RemoteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»[39m[1m[41m 
+Failed Tests 1 [49m[2
+2m[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»[39m
+
+[41m[1m FAIL 
+[22m[49m src/app/bug-
+condition-exploration.s
+pec.ts[2m > [22mBug 
+Condition Exploration 
+Tests[2m > [22mTest 
+1.2: Scroll 
+Performance - Lag 
+Bug[2m > [22mshould 
+maintain >= 55fps 
+during scroll with 20+ 
+products
+[31m[1mReferenceError
+[22m: document is not 
+defined[39m
+[36m [2mΓ¥»[22m src/
+app/bug-condition-explo
+ration.spec.ts:[2m113:
+25[22m[39m
+    [90m111| [39m    
+    [35mfor[39m 
+([35mlet[39m j 
+[33m=[39m 
+[34m0[39m[33m;[39m 
+j [33m<[39m changedPr
+oducts[33m;[39m 
+j[33m++[39m) {
+    [90m112| [39m    
+      [90m// Simulate 
+minimal DOM 
+manipulation cost[39m
+    [90m113| [39m    
+      [35mconst[39m 
+dummy [33m=[39m docum
+ent[33m.[39m[34mcrea
+teElement[39m([32m'di
+v'[39m)[33m;[39m
+    [90m   | [39m    
+                    
+[31m^[39m
+    [90m114| [39m    
+      dummy[33m.[39mi
+nnerHTML [33m=[39m 
+[32m`Product [39m[36
+m${[39mj[36m}[39m[3
+2m`[39m[33m;[39m
+    [90m115| [39m    
+    }
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ
+»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»Γ
+Ä»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/1]ΓÄ»[2
+2m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (8)[39m
+[2m   Start at [22m 21:02:20
+[2m   Duration [22m 3.14s[2m (transform 131ms, setup 0ms, import 700ms, tests 636ms, environment 0ms)[22m
+
