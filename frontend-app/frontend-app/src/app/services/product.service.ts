@@ -44,4 +44,8 @@ export class ProductService {
   deleteProduct(id: number): Observable<any> {
     return this.http.delete(`${this.API}/products/${id}`);
   }
+
+  resolveProductImage(product: Product): string {
+    return product.image || '/assets/products/default.jpg';
+  }
 }
