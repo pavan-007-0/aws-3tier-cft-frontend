@@ -39,11 +39,11 @@ validate-dockerfile:
   stage: validation
   script:
     - echo "Checking Dockerfile exists..."
-    - test -f Dockerfile || (echo "ERROR: Dockerfile not found" && exit 1)
+    - 'test -f Dockerfile || { echo "ERROR: Dockerfile not found"; exit 1; }'
     - echo "Checking Dockerfile has required instructions..."
-    - grep -q "^FROM "    Dockerfile || (echo "ERROR: FROM missing"    && exit 1)
-    - grep -q "^COPY \|^ADD " Dockerfile || (echo "ERROR: COPY/ADD missing" && exit 1)
-    - grep -q "^CMD \|^ENTRYPOINT " Dockerfile || (echo "ERROR: CMD/ENTRYPOINT missing" && exit 1)
+    - 'grep -qE "^FROM " Dockerfile || { echo "ERROR: FROM missing"; exit 1; }'
+    - 'grep -qE "^(COPY|ADD) " Dockerfile || { echo "ERROR: COPY/ADD missing"; exit 1; }'
+    - 'grep -qE "^(CMD|ENTRYPOINT) " Dockerfile || { echo "ERROR: CMD/ENTRYPOINT missing"; exit 1; }'
     - echo "Dockerfile validation passed"
   only:
     - main
