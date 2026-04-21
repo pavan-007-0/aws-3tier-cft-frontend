@@ -11,42 +11,47 @@ variables:
   IMAGE_TAG: latest
 
 stages:
-  - build
+  - validation
+  - infra
+  - docker
   - deploy
 
 before_script:
   - apk add --no-cache aws-cli
-  - aws sts get-caller-identity
   - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# ================= BUILD & PUSH =================
-build-frontend:
-  stage: build
+# ==========================
+# STAGE 1 - VALIDATION
+# ==========================
+
+validate-aws:
+  stage: validation
   script:
-    - |
-      aws ecr describe-repositories \
-        --repository-names "$FRONTEND_REPO" \
-      || aws ecr create-repository \
-        --repository-name "$FRONTEND_REPO"
-
-    - |
-      aws ecr get-login-password | docker login \
-        --username AWS \
-        --password-stdin \
-        "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
-
-    - docker build -t $FRONTEND_REPO:$IMAGE_TAG .
-    - docker tag $FRONTEND_REPO:$IMAGE_TAG "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
-    - docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+    - echo "Validating AWS credentials..."
+    - aws sts get-caller-identity
+    - echo "Checking region is reachable..."
+    - aws ec2 describe-availability-zones --region "$AWS_DEFAULT_REGION" --query "AvailabilityZones[0].State" --output text
+    - echo "AWS credentials OK"
   only:
     - main
 
-# ================= DEPLOY =================
-deploy-frontend:
-  stage: deploy
-  needs: ["build-frontend"]
+validate-dockerfile:
+  stage: validation
   script:
-    # ---------- CREATE CLOUDFORMATION FILE ----------
+    - echo "Checking Dockerfile exists..."
+    - test -f Dockerfile || (echo "ERROR: Dockerfile not found" && exit 1)
+    - echo "Checking Dockerfile has required instructions..."
+    - grep -q "^FROM "    Dockerfile || (echo "ERROR: FROM missing"    && exit 1)
+    - grep -q "^COPY \|^ADD " Dockerfile || (echo "ERROR: COPY/ADD missing" && exit 1)
+    - grep -q "^CMD \|^ENTRYPOINT " Dockerfile || (echo "ERROR: CMD/ENTRYPOINT missing" && exit 1)
+    - echo "Dockerfile validation passed"
+  only:
+    - main
+
+validate-cfn-template:
+  stage: validation
+  script:
+    - echo "Rendering CloudFormation template for validation..."
     - |
       cat > frontend-stack.yaml << 'EOF'
       AWSTemplateFormatVersion: "2010-09-09"
@@ -152,8 +157,15 @@ deploy-frontend:
             ManagedPolicyArns:
               - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
+        LogGroup:
+          Type: AWS::Logs::LogGroup
+          Properties:
+            LogGroupName: /ecs/frontend
+            RetentionInDays: 7
+
         TaskDef:
           Type: AWS::ECS::TaskDefinition
+          DependsOn: LogGroup
           Properties:
             Cpu: "256"
             Memory: "512"
@@ -165,6 +177,12 @@ deploy-frontend:
                 Image: !Ref ImageURI
                 PortMappings:
                   - ContainerPort: 80
+                LogConfiguration:
+                  LogDriver: awslogs
+                  Options:
+                    awslogs-group: /ecs/frontend
+                    awslogs-region: !Ref AWS::Region
+                    awslogs-stream-prefix: frontend
 
         TargetGroup:
           Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -173,9 +191,13 @@ deploy-frontend:
             Port: 80
             Protocol: HTTP
             TargetType: ip
-            HealthCheckPath: /health
+            HealthCheckPath: /
+            HealthCheckIntervalSeconds: 30
+            HealthCheckTimeoutSeconds: 10
+            HealthyThresholdCount: 2
+            UnhealthyThresholdCount: 5
             Matcher:
-              HttpCode: 200
+              HttpCode: 200-399
 
         ALB:
           Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -202,6 +224,7 @@ deploy-frontend:
             LaunchType: FARGATE
             DesiredCount: 1
             TaskDefinition: !Ref TaskDef
+            HealthCheckGracePeriodSeconds: 60
             NetworkConfiguration:
               AwsvpcConfiguration:
                 AssignPublicIp: ENABLED
@@ -216,14 +239,91 @@ deploy-frontend:
         FrontendURL:
           Value: !GetAtt ALB.DNSName
       EOF
+    - aws cloudformation validate-template --template-body file://frontend-stack.yaml --region "$AWS_DEFAULT_REGION"
+    - echo "CloudFormation template is valid"
+  artifacts:
+    paths:
+      - frontend-stack.yaml
+    expire_in: 1 hour
+  only:
+    - main
 
-    # ---------- DEPLOY STACK ----------
+# ==========================
+# STAGE 2 - INFRA
+# ECR repo only - the rest of
+# the AWS infra is created by
+# CloudFormation in deploy.
+# ==========================
+
+infra-ecr:
+  stage: infra
+  needs: ["validate-aws"]
+  script:
+    - echo "Ensuring ECR repository exists..."
+    - |
+      aws ecr describe-repositories \
+        --repository-names "$FRONTEND_REPO" \
+        --region "$AWS_DEFAULT_REGION" 2>/dev/null \
+      || aws ecr create-repository \
+        --repository-name "$FRONTEND_REPO" \
+        --region "$AWS_DEFAULT_REGION" \
+        --image-scanning-configuration scanOnPush=true \
+        --encryption-configuration encryptionType=AES256
+    - echo "ECR repository ready"
+  only:
+    - main
+
+# ==========================
+# STAGE 3 - DOCKER
+# Build and push image to ECR
+# ==========================
+
+docker-build:
+  stage: docker
+  needs: ["infra-ecr", "validate-dockerfile"]
+  script:
+    - echo "Logging in to ECR..."
+    - |
+      aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login \
+        --username AWS \
+        --password-stdin \
+        "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+    - echo "Building image..."
+    - docker build -t "$FRONTEND_REPO:$IMAGE_TAG" .
+    - docker tag "$FRONTEND_REPO:$IMAGE_TAG" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+    - echo "Pushing image..."
+    - docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
+    - echo "Image pushed to ECR successfully"
+  only:
+    - main
+
+# ==========================
+# STAGE 4 - DEPLOY
+# Deploy CloudFormation stack
+# ==========================
+
+deploy-frontend:
+  stage: deploy
+  needs: ["docker-build", "validate-cfn-template"]
+  script:
+    - echo "Deploying CloudFormation stack..."
     - |
       aws cloudformation deploy \
-        --stack-name $FRONTEND_STACK \
+        --stack-name "$FRONTEND_STACK" \
         --template-file frontend-stack.yaml \
         --capabilities CAPABILITY_NAMED_IAM \
+        --region "$AWS_DEFAULT_REGION" \
+        --no-fail-on-empty-changeset \
         --parameter-overrides \
           ImageURI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
+
+    - echo "Fetching frontend URL..."
+    - |
+      FRONTEND_URL=$(aws cloudformation describe-stacks \
+        --stack-name "$FRONTEND_STACK" \
+        --region "$AWS_DEFAULT_REGION" \
+        --query "Stacks[0].Outputs[?OutputKey=='FrontendURL'].OutputValue" \
+        --output text)
+      echo "FRONTEND LIVE AT: http://$FRONTEND_URL"
   only:
     - main
