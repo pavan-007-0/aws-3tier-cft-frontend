@@ -287,15 +287,19 @@ infra-ecr:
 docker-build:
   stage: docker
   needs: ["infra-ecr", "validate-dockerfile"]
-  image: docker:24
+  # Use Alpine 3.21 instead of docker:24 (Alpine 3.20).
+  # Alpine 3.20's apk aws-cli has a broken pyexpat symbol;
+  # Alpine 3.21 ships a fixed expat that works with aws-cli.
+  image: alpine:3.21
   services:
     - docker:24-dind
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   before_script:
-    - apk add --no-cache python3 py3-pip
-    - pip install --break-system-packages --no-cache-dir awscli
+    - apk add --no-cache docker-cli aws-cli
+    - aws --version
+    - docker --version
     - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   script:
     - echo "Logging in to ECR..."
