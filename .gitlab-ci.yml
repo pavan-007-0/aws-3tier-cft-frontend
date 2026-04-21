@@ -2,8 +2,9 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   AWS_DEFAULT_REGION: us-east-1
   FRONTEND_REPO: frontend-repo
-  FRONTEND_STACK: frontend-stack
   IMAGE_TAG: latest
+  CLUSTER_NAME: ecommerce-cluster
+  BACKEND_URL: "k8s-default-backend-c02a8a9f8c-760183639.us-east-1.elb.amazonaws.com"
 
 stages:
   - validation
@@ -11,14 +12,12 @@ stages:
   - docker
   - deploy
 
-# Default image for jobs that talk to AWS.
-# (The docker-build job overrides this with docker:24.)
+# Default image for AWS-only jobs.
+# (docker stage overrides this with dind below.)
 default:
-  image:
-    name: amazon/aws-cli
-    entrypoint: [""]
+  image: alpine:3.21
   before_script:
-    - aws sts get-caller-identity >/dev/null
+    - apk add --no-cache aws-cli
     - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # ==========================
@@ -38,6 +37,7 @@ validate-aws:
 
 validate-dockerfile:
   stage: validation
+  before_script: []
   script:
     - echo "Checking Dockerfile exists..."
     - 'test -f Dockerfile || { echo "ERROR: Dockerfile not found"; exit 1; }'
@@ -49,211 +49,26 @@ validate-dockerfile:
   only:
     - main
 
-validate-cfn-template:
+validate-cluster:
   stage: validation
   script:
-    - echo "Rendering CloudFormation template for validation..."
+    - echo "Checking that EKS cluster $CLUSTER_NAME exists and is ACTIVE..."
     - |
-      cat > frontend-stack.yaml << 'EOF'
-      AWSTemplateFormatVersion: "2010-09-09"
-      Description: Frontend ECS Fargate with ALB (Health-check safe)
-
-      Parameters:
-        ImageURI:
-          Type: String
-
-      Resources:
-        VPC:
-          Type: AWS::EC2::VPC
-          Properties:
-            CidrBlock: 10.30.0.0/16
-            EnableDnsSupport: true
-            EnableDnsHostnames: true
-
-        IGW:
-          Type: AWS::EC2::InternetGateway
-
-        AttachIGW:
-          Type: AWS::EC2::VPCGatewayAttachment
-          Properties:
-            VpcId: !Ref VPC
-            InternetGatewayId: !Ref IGW
-
-        SubnetA:
-          Type: AWS::EC2::Subnet
-          Properties:
-            VpcId: !Ref VPC
-            CidrBlock: 10.30.1.0/24
-            AvailabilityZone: us-east-1a
-            MapPublicIpOnLaunch: true
-
-        SubnetB:
-          Type: AWS::EC2::Subnet
-          Properties:
-            VpcId: !Ref VPC
-            CidrBlock: 10.30.2.0/24
-            AvailabilityZone: us-east-1b
-            MapPublicIpOnLaunch: true
-
-        RouteTable:
-          Type: AWS::EC2::RouteTable
-          Properties:
-            VpcId: !Ref VPC
-
-        Route:
-          Type: AWS::EC2::Route
-          DependsOn: AttachIGW
-          Properties:
-            RouteTableId: !Ref RouteTable
-            DestinationCidrBlock: 0.0.0.0/0
-            GatewayId: !Ref IGW
-
-        SubnetART:
-          Type: AWS::EC2::SubnetRouteTableAssociation
-          Properties:
-            SubnetId: !Ref SubnetA
-            RouteTableId: !Ref RouteTable
-
-        SubnetBRT:
-          Type: AWS::EC2::SubnetRouteTableAssociation
-          Properties:
-            SubnetId: !Ref SubnetB
-            RouteTableId: !Ref RouteTable
-
-        ALBSG:
-          Type: AWS::EC2::SecurityGroup
-          Properties:
-            GroupDescription: Frontend ALB SG
-            VpcId: !Ref VPC
-            SecurityGroupIngress:
-              - IpProtocol: tcp
-                FromPort: 80
-                ToPort: 80
-                CidrIp: 0.0.0.0/0
-
-        TaskSG:
-          Type: AWS::EC2::SecurityGroup
-          Properties:
-            GroupDescription: Frontend Task SG
-            VpcId: !Ref VPC
-            SecurityGroupIngress:
-              - IpProtocol: tcp
-                FromPort: 80
-                ToPort: 80
-                SourceSecurityGroupId: !Ref ALBSG
-
-        Cluster:
-          Type: AWS::ECS::Cluster
-
-        ExecutionRole:
-          Type: AWS::IAM::Role
-          Properties:
-            AssumeRolePolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Principal:
-                    Service: ecs-tasks.amazonaws.com
-                  Action: sts:AssumeRole
-            ManagedPolicyArns:
-              - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-
-        LogGroup:
-          Type: AWS::Logs::LogGroup
-          Properties:
-            LogGroupName: /ecs/frontend
-            RetentionInDays: 7
-
-        TaskDef:
-          Type: AWS::ECS::TaskDefinition
-          DependsOn: LogGroup
-          Properties:
-            Cpu: "256"
-            Memory: "512"
-            NetworkMode: awsvpc
-            RequiresCompatibilities: [FARGATE]
-            ExecutionRoleArn: !GetAtt ExecutionRole.Arn
-            ContainerDefinitions:
-              - Name: frontend
-                Image: !Ref ImageURI
-                PortMappings:
-                  - ContainerPort: 80
-                LogConfiguration:
-                  LogDriver: awslogs
-                  Options:
-                    awslogs-group: /ecs/frontend
-                    awslogs-region: !Ref AWS::Region
-                    awslogs-stream-prefix: frontend
-
-        TargetGroup:
-          Type: AWS::ElasticLoadBalancingV2::TargetGroup
-          Properties:
-            VpcId: !Ref VPC
-            Port: 80
-            Protocol: HTTP
-            TargetType: ip
-            HealthCheckPath: /
-            HealthCheckIntervalSeconds: 30
-            HealthCheckTimeoutSeconds: 10
-            HealthyThresholdCount: 2
-            UnhealthyThresholdCount: 5
-            Matcher:
-              HttpCode: 200-399
-
-        ALB:
-          Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-          Properties:
-            Scheme: internet-facing
-            Subnets: [!Ref SubnetA, !Ref SubnetB]
-            SecurityGroups: [!Ref ALBSG]
-
-        Listener:
-          Type: AWS::ElasticLoadBalancingV2::Listener
-          Properties:
-            LoadBalancerArn: !Ref ALB
-            Port: 80
-            Protocol: HTTP
-            DefaultActions:
-              - Type: forward
-                TargetGroupArn: !Ref TargetGroup
-
-        Service:
-          Type: AWS::ECS::Service
-          DependsOn: Listener
-          Properties:
-            Cluster: !Ref Cluster
-            LaunchType: FARGATE
-            DesiredCount: 1
-            TaskDefinition: !Ref TaskDef
-            HealthCheckGracePeriodSeconds: 60
-            NetworkConfiguration:
-              AwsvpcConfiguration:
-                AssignPublicIp: ENABLED
-                Subnets: [!Ref SubnetA, !Ref SubnetB]
-                SecurityGroups: [!Ref TaskSG]
-            LoadBalancers:
-              - ContainerName: frontend
-                ContainerPort: 80
-                TargetGroupArn: !Ref TargetGroup
-
-      Outputs:
-        FrontendURL:
-          Value: !GetAtt ALB.DNSName
-      EOF
-    - aws cloudformation validate-template --template-body file://frontend-stack.yaml --region "$AWS_DEFAULT_REGION"
-    - echo "CloudFormation template is valid"
-  artifacts:
-    paths:
-      - frontend-stack.yaml
-    expire_in: 1 hour
+      STATUS=$(aws eks describe-cluster --name "$CLUSTER_NAME" --region "$AWS_DEFAULT_REGION" --query 'cluster.status' --output text)
+      echo "Cluster status: $STATUS"
+      if [ "$STATUS" != "ACTIVE" ]; then
+        echo "ERROR: cluster $CLUSTER_NAME is not ACTIVE (status=$STATUS)"
+        exit 1
+      fi
+    - echo "EKS cluster is ready"
   only:
     - main
 
 # ==========================
 # STAGE 2 - INFRA
-# ECR repo only - the rest of
-# the AWS infra is created by
-# CloudFormation in deploy.
+# Make sure the ECR repo and the
+# cluster permissions exist before
+# we build / deploy.
 # ==========================
 
 infra-ecr:
@@ -274,22 +89,45 @@ infra-ecr:
   only:
     - main
 
+infra-eks-access:
+  stage: infra
+  needs: ["validate-cluster"]
+  script:
+    - |
+      echo "Granting gitlab-cicd-user admin access to EKS cluster..."
+      CICD_USER_ARN=$(aws iam get-user --user-name gitlab-cicd-user --query 'User.Arn' --output text)
+      aws eks create-access-entry \
+        --cluster-name "$CLUSTER_NAME" \
+        --principal-arn "$CICD_USER_ARN" \
+        --region "$AWS_DEFAULT_REGION" 2>/dev/null || echo "Access entry already exists"
+      aws eks associate-access-policy \
+        --cluster-name "$CLUSTER_NAME" \
+        --principal-arn "$CICD_USER_ARN" \
+        --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy \
+        --access-scope type=cluster \
+        --region "$AWS_DEFAULT_REGION" 2>/dev/null || echo "Policy already associated"
+      echo "EKS access granted"
+    - |
+      echo "Attaching ELB permissions to node instance role..."
+      NODE_ROLE=$(aws iam list-roles --query "Roles[?contains(RoleName, 'NodeInstanceRole')].RoleName" --output text)
+      if [ -n "$NODE_ROLE" ]; then
+        aws iam attach-role-policy --role-name "$NODE_ROLE" --policy-arn arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess 2>/dev/null || true
+        echo "ELB permissions attached to $NODE_ROLE"
+      else
+        echo "No NodeInstanceRole found - skipping"
+      fi
+  only:
+    - main
+
 # ==========================
 # STAGE 3 - DOCKER
-# Build and push image to ECR
-# This job needs Docker, so it
-# uses docker:24 + dind and
-# installs aws-cli via pip
-# (the apk version is broken
-#  on the current Alpine).
+# Build the Angular image and push to ECR.
+# Uses Alpine 3.21 + dind (apk aws-cli works here).
 # ==========================
 
 docker-build:
   stage: docker
   needs: ["infra-ecr", "validate-dockerfile"]
-  # Use Alpine 3.21 instead of docker:24 (Alpine 3.20).
-  # Alpine 3.20's apk aws-cli has a broken pyexpat symbol;
-  # Alpine 3.21 ships a fixed expat that works with aws-cli.
   image: alpine:3.21
   services:
     - docker:24-dind
@@ -297,17 +135,11 @@ docker-build:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
   before_script:
-    - apk add --no-cache docker-cli aws-cli
-    - aws --version
-    - docker --version
+    - apk add --no-cache aws-cli docker-cli
     - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   script:
     - echo "Logging in to ECR..."
-    - |
-      aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login \
-        --username AWS \
-        --password-stdin \
-        "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+    - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
     - echo "Building image..."
     - docker build -t "$FRONTEND_REPO:$IMAGE_TAG" .
     - docker tag "$FRONTEND_REPO:$IMAGE_TAG" "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG"
@@ -319,31 +151,128 @@ docker-build:
 
 # ==========================
 # STAGE 4 - DEPLOY
-# Deploy CloudFormation stack
+# Apply manifests to existing EKS cluster.
 # ==========================
 
 deploy-frontend:
   stage: deploy
-  needs: ["docker-build", "validate-cfn-template"]
+  needs: ["docker-build", "infra-eks-access"]
+  before_script:
+    - apk add --no-cache aws-cli curl bash
+    - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+    - curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    - chmod +x kubectl && mv kubectl /usr/local/bin/
+    - aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name "$CLUSTER_NAME"
   script:
-    - echo "Deploying CloudFormation stack..."
     - |
-      aws cloudformation deploy \
-        --stack-name "$FRONTEND_STACK" \
-        --template-file frontend-stack.yaml \
-        --capabilities CAPABILITY_NAMED_IAM \
-        --region "$AWS_DEFAULT_REGION" \
-        --no-fail-on-empty-changeset \
-        --parameter-overrides \
-          ImageURI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$FRONTEND_REPO:$IMAGE_TAG
+      cat > frontend-manifests.yaml <<EOF
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: frontend
+        namespace: default
+      spec:
+        replicas: 2
+        selector:
+          matchLabels:
+            app: frontend
+        template:
+          metadata:
+            labels:
+              app: frontend
+          spec:
+            containers:
+              - name: frontend
+                image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${FRONTEND_REPO}:${IMAGE_TAG}
+                imagePullPolicy: Always
+                ports:
+                  - containerPort: 80
+                resources:
+                  requests:
+                    cpu: "125m"
+                    memory: "128Mi"
+                  limits:
+                    cpu: "250m"
+                    memory: "256Mi"
+                livenessProbe:
+                  httpGet:
+                    path: /
+                    port: 80
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  failureThreshold: 3
+                readinessProbe:
+                  httpGet:
+                    path: /
+                    port: 80
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  failureThreshold: 3
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: frontend
+        namespace: default
+      spec:
+        type: ClusterIP
+        selector:
+          app: frontend
+        ports:
+          - port: 80
+            targetPort: 80
+            protocol: TCP
+      ---
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: frontend
+        namespace: default
+        annotations:
+          kubernetes.io/ingress.class: alb
+          alb.ingress.kubernetes.io/scheme: internet-facing
+          alb.ingress.kubernetes.io/target-type: ip
+          alb.ingress.kubernetes.io/healthcheck-path: /
+          alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+      spec:
+        ingressClassName: alb
+        rules:
+          - http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: frontend
+                      port:
+                        number: 80
+      EOF
+      kubectl apply -f frontend-manifests.yaml
+      echo "Frontend manifests applied"
 
-    - echo "Fetching frontend URL..."
+    - kubectl rollout status deployment/frontend -n default --timeout=5m
+
     - |
-      FRONTEND_URL=$(aws cloudformation describe-stacks \
-        --stack-name "$FRONTEND_STACK" \
-        --region "$AWS_DEFAULT_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='FrontendURL'].OutputValue" \
-        --output text)
-      echo "FRONTEND LIVE AT: http://$FRONTEND_URL"
+      echo "Waiting for frontend ALB to be assigned..."
+      FRONTEND_URL=""
+      for i in $(seq 1 24); do
+        FRONTEND_URL=$(kubectl get ingress frontend -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        if [ -n "$FRONTEND_URL" ]; then
+          echo "Frontend live at: http://$FRONTEND_URL"
+          break
+        fi
+        echo "attempt $i - waiting 15s..."
+        sleep 15
+      done
+
+    - |
+      echo "Updating backend CORS with frontend URL..."
+      FRONTEND_URL=$(kubectl get ingress frontend -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+      if [ -n "$FRONTEND_URL" ]; then
+        kubectl set env deployment/backend CORS_ORIGINS="http://$FRONTEND_URL" -n default || echo "backend deployment not found - skipping CORS update"
+        echo "Backend CORS updated to: http://$FRONTEND_URL"
+      else
+        echo "Frontend URL not yet assigned - CORS will need manual update"
+      fi
   only:
     - main
