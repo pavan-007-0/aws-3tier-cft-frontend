@@ -41,3 +41,10 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+# Local environment and generated validation artifacts
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+*.txt

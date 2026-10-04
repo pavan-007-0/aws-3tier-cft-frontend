@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-admin-login',
@@ -11,19 +12,26 @@ import { CommonModule } from '@angular/common';
   styleUrl: './admin-login.component.css'
 })
 export class AdminLoginComponent {
-
   username = '';
   password = '';
   error = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
-  login() {
-    if (this.username === 'admin' && this.password === 'admin123') {
-      localStorage.setItem('adminLoggedIn', 'true');
-      this.router.navigate(['/admin']);
-    } else {
-      this.error = 'Invalid username or password';
-    }
+  login(): void {
+    this.error = '';
+    this.authService.login({ email: this.username, password: this.password }).subscribe({
+      next: response => {
+        if (response.success && response.user?.role === 'admin') {
+          localStorage.setItem('adminLoggedIn', 'true');
+          this.router.navigate(['/admin']);
+        } else {
+          this.error = 'This account does not have administrator access';
+        }
+      },
+      error: error => {
+        this.error = error?.message || 'Invalid email or password';
+      }
+    });
   }
 }

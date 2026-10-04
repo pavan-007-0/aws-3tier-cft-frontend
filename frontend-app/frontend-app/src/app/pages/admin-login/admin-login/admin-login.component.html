@@ -6,11 +6,11 @@
 
   <form (ngSubmit)="login()">
 
-    <label>Username</label>
-    <input type="text" [(ngModel)]="username" name="username" required>
+    <label>Email</label>
+    <input type="text" [(ngModel)]="username" name="username" autocomplete="email" required>
 
     <label>Password</label>
-    <input type="password" [(ngModel)]="password" name="password" required>
+    <input type="password" [(ngModel)]="password" name="password" autocomplete="current-password" required>
 
     <button class="btn">Login</button>
 

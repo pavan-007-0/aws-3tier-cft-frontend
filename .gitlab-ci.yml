@@ -1,10 +1,10 @@
 variables:
   DOCKER_TLS_CERTDIR: ""
-  AWS_DEFAULT_REGION: us-east-1
-  FRONTEND_REPO: frontend-repo
-  IMAGE_TAG: latest
-  CLUSTER_NAME: ecommerce-cluster
-  BACKEND_URL: "k8s-default-backend-c02a8a9f8c-760183639.us-east-1.elb.amazonaws.com"
+  AWS_DEFAULT_REGION: ""
+  FRONTEND_REPO: "frontend-repo"
+  IMAGE_TAG: "latest"
+  CLUSTER_NAME: ""
+  BACKEND_URL: ""
 
 stages:
   - validation
